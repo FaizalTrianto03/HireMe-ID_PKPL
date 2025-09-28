@@ -1,0 +1,2 @@
+C:/HireMe-PKPL/android/app/.cxx/RelWithDebInfo/391bnu6n/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/HireMe-PKPL/android/app/.cxx/RelWithDebInfo/391bnu6n/armeabi-v7a/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,2 @@
+C:/HireMe-PKPL/android/app/.cxx/Debug/b121251y/x86/CMakeFiles/edit_cache.dir
+C:/HireMe-PKPL/android/app/.cxx/Debug/b121251y/x86/CMakeFiles/rebuild_cache.dir

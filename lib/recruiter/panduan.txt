@@ -1,0 +1,53 @@
+Ya, status pelamar dalam proses rekrutmen bisa dirancang sesuai alur berikut:
+
+---
+
+### **Status Pelamar:**
+
+1. **Pengajuan** *(Submitted)*:
+   - Pelamar baru saja mengirimkan aplikasi.
+   - Dokumen seperti CV sudah diterima, tapi belum ada tindakan dari recruiter.
+
+2. **Lamaran di Review** *(Under Review)*:
+   - Recruiter atau HR sedang memeriksa aplikasi pelamar, seperti mengevaluasi CV atau dokumen pendukung.
+
+3. **Lamaran Diproses** *(In Process)*:
+   - Pelamar telah masuk ke tahap proses lebih lanjut, misalnya:
+     - Dijadwalkan untuk wawancara.
+     - Proses asesmen (tes keterampilan, psikotes).
+   - Status ini menunjukkan pelamar sedang berada dalam pipeline aktif.
+
+4. **Ditunda** *(On Hold)*:
+   - Lamaran pelamar dipertimbangkan tetapi belum diprioritaskan untuk diproses lebih lanjut.
+
+5. **Ditolak** *(Rejected)*:
+   - Lamaran pelamar tidak diterima, dengan alasan tertentu (opsional, recruiter bisa memberikan catatan).
+
+6. **Diterima** *(Accepted/Hired)*:
+   - Lamaran pelamar disetujui.
+   - Pelamar secara resmi diterima untuk posisi yang dilamar.
+
+---
+
+### **Flow Transisi Status:**
+- **Pengajuan** → **Review** → **Diproses** → **Diterima/Ditolak**.
+- Dari **Review**, recruiter bisa langsung menempatkan pelamar ke:
+  - **Ditolak**, jika tidak sesuai kualifikasi.
+  - **Ditunda**, jika masih menunggu keputusan.
+
+---
+
+### **Contoh Status yang Bisa Ditampilkan ke Recruiter:**
+Di halaman `Applied` recruiter, tampilkan jumlah pelamar berdasarkan status:
+```
+[Pengajuan]  15 pelamar
+[Review]     8 pelamar
+[Proses]     3 pelamar
+[Diterima]   1 pelamar
+[Ditolak]    4 pelamar
+[Ditunda]    2 pelamar
+```
+
+---
+
+Kalau alurnya sudah sesuai, tinggal kita implementasikan. Tapi kalau ada yang kurang atau perlu diperbaiki, tinggal bilang aja ya, Bang Faizal! 😊
