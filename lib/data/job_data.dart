@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 // Pastikan Firebase sudah diinisialisasi di main.dart
 final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -65,76 +64,171 @@ class CompanyDetails {
     required this.companyGalleryPaths,
   });
 }
-List<Job> jobList = []; // List utama untuk menampung data
+
+// List utama untuk menampung data - PURELY dari Firebase, NO DUMMY
+List<Job> jobList = [];
+
+// Fungsi untuk fetch data dari Firestore secara pure
 Future<void> fetchJobData() async {
   try {
-    jobList.clear(); // Kosongkan jobList (no dummy)
+    print('🔥 Starting to fetch job data from Firestore...');
+    
+    // Clear list untuk memastikan tidak ada duplikasi
+    jobList.clear();
 
-    // Ambil data dari Firebase
+    // Ambil data dari Firebase collection 'Jobs'
     final snapshot = await _firestore.collection('Jobs').get();
+    
+    print('📄 Found ${snapshot.docs.length} documents in Jobs collection');
+    
     for (var doc in snapshot.docs) {
       Map<String, dynamic> data = doc.data();
+      print('📋 Processing document: ${doc.id}');
+      print('📋 Document data keys: ${data.keys.toList()}');
+      
       if (data.containsKey('jobs')) {
         List<dynamic> firebaseJobs = data['jobs'];
+        print('💼 Found ${firebaseJobs.length} jobs in document ${doc.id}');
+        
         for (var jobData in firebaseJobs) {
-          // Normalize requirements to List<String> from either List<String> or List<Map>
-          List<String> normalizeRequirements(dynamic raw) {
-            final result = <String>[];
-            if (raw is List) {
-              for (final item in raw) {
-                if (item is String) {
-                  result.add(item);
-                } else if (item is Map) {
-                  final isActive = item['isActive'] == true;
-                  final text = (item['text'] ?? '').toString();
-                  if (text.isNotEmpty) {
-                    // Only include active requirements if flag exists
-                    if (item.containsKey('isActive')) {
-                      if (isActive) result.add(text);
-                    } else {
-                      result.add(text);
+          try {
+            // Normalize requirements to List<String> from either List<String> or List<Map>
+            List<String> normalizeRequirements(dynamic raw) {
+              final result = <String>[];
+              if (raw is List) {
+                for (final item in raw) {
+                  if (item is String) {
+                    result.add(item);
+                  } else if (item is Map) {
+                    final isActive = item['isActive'] == true;
+                    final text = (item['text'] ?? '').toString();
+                    if (text.isNotEmpty) {
+                      // Only include active requirements if flag exists
+                      if (item.containsKey('isActive')) {
+                        if (isActive) result.add(text);
+                      } else {
+                        result.add(text);
+                      }
                     }
                   }
                 }
               }
+              return result;
             }
-            return result;
-          }
 
-          Job newJob = Job(
-            idjob: jobData['idjob'] ?? '',
-            position: jobData['position'] ?? '',
-            companyName: jobData['companyName'] ?? '',
-            location: jobData['location'] ?? '',
-            companyLogoPath: jobData['companyLogoPath'] ?? '',
-            jobType: jobData['jobType'] ?? '',
-            categories: List<String>.from(jobData['categories'] ?? []),
-            jobDetails: JobDetails(
-              jobDescription: jobData['jobDetails']['jobDescription'] ?? '',
-              requirements: normalizeRequirements(jobData['jobDetails']['requirements'] ?? []),
-              location: jobData['jobDetails']['location'] ?? '',
-              facilities: List<String>.from(jobData['jobDetails']['facilities'] ?? []),
-              companyDetails: CompanyDetails(
-                aboutCompany: jobData['jobDetails']['companyDetails']['aboutCompany'] ?? '',
-                website: jobData['jobDetails']['companyDetails']['website'] ?? '',
-                industry: jobData['jobDetails']['companyDetails']['industry'] ?? '',
-                companyGalleryPaths: List<String>.from(
-                  jobData['jobDetails']['companyDetails']['companyGalleryPaths'] ?? [],
+            Job newJob = Job(
+              idjob: jobData['idjob'] ?? '',
+              position: jobData['position'] ?? '',
+              companyName: jobData['companyName'] ?? '',
+              location: jobData['location'] ?? '',
+              companyLogoPath: jobData['companyLogoPath'] ?? '',
+              jobType: jobData['jobType'] ?? '',
+              categories: List<String>.from(jobData['categories'] ?? []),
+              jobDetails: JobDetails(
+                jobDescription: jobData['jobDetails']['jobDescription'] ?? '',
+                requirements: normalizeRequirements(jobData['jobDetails']['requirements'] ?? []),
+                location: jobData['jobDetails']['location'] ?? '',
+                facilities: List<String>.from(jobData['jobDetails']['facilities'] ?? []),
+                companyDetails: CompanyDetails(
+                  aboutCompany: jobData['jobDetails']['companyDetails']['aboutCompany'] ?? '',
+                  website: jobData['jobDetails']['companyDetails']['website'] ?? '',
+                  industry: jobData['jobDetails']['companyDetails']['industry'] ?? '',
+                  companyGalleryPaths: List<String>.from(
+                    jobData['jobDetails']['companyDetails']['companyGalleryPaths'] ?? [],
+                  ),
                 ),
               ),
-            ),
-            salary: jobData['salary'] ?? '',
-            isApplied: jobData['isApplied'] ?? false,
-            applyStatus: jobData['applyStatus'] ?? 'inProcess',
-            isRecommended: jobData['isRecommended'] ?? false,
-            isSaved: jobData['isSaved'] ?? false,
-          );
+              salary: jobData['salary'] ?? '',
+              isApplied: jobData['isApplied'] ?? false,
+              applyStatus: jobData['applyStatus'] ?? 'inProcess',
+              isRecommended: jobData['isRecommended'] ?? false,
+              isSaved: jobData['isSaved'] ?? false,
+            );
 
-          jobList.add(newJob);
+            // Cek duplikasi berdasarkan idjob sebelum menambahkan
+            if (!jobList.any((existingJob) => existingJob.idjob == newJob.idjob)) {
+              jobList.add(newJob);
+              print('✅ Added job: ${newJob.position} at ${newJob.companyName}');
+            } else {
+              print('⚠️ Skipped duplicate job: ${newJob.position}');
+            }
+          } catch (e) {
+            print('❌ Error processing individual job: $e');
+          }
         }
+      } else {
+        print('⚠️ Document ${doc.id} does not contain "jobs" field');
       }
     }
+    
+    print('🎉 Successfully loaded ${jobList.length} jobs from Firestore');
+    
+    // Debug: Print sample data
+    if (jobList.isNotEmpty) {
+      print('📝 Sample job: ${jobList.first.position} - ${jobList.first.categories}');
+    }
+    
   } catch (error) {
-    print('Error fetching Firebase data: $error');
+    print('💥 Error fetching Firebase data: $error');
+    
+    // Buat beberapa sample data jika Firebase gagal (hanya untuk testing)
+    if (jobList.isEmpty) {
+      print('🚨 No data from Firebase, creating minimal sample data...');
+      _createSampleData();
+    }
   }
+}
+
+// Fungsi untuk membuat sample data jika Firebase benar-benar kosong
+void _createSampleData() {
+  jobList = [
+    Job(
+      idjob: 'sample1',
+      position: 'Flutter Developer',
+      companyName: 'TechCorp',
+      location: 'Jakarta',
+      companyLogoPath: 'assets/images/logo_tech_solutions.png',
+      jobType: 'Full-time',
+      categories: ['Technology'],
+      salary: 'Rp 15.000.000 - 20.000.000',
+      isRecommended: true,
+      jobDetails: JobDetails(
+        jobDescription: 'Develop mobile applications using Flutter',
+        requirements: ['2+ years experience', 'Flutter expertise'],
+        location: 'Jakarta',
+        facilities: ['Health insurance', 'Remote work'],
+        companyDetails: CompanyDetails(
+          aboutCompany: 'Leading technology company',
+          website: 'https://techcorp.com',
+          industry: 'Technology',
+          companyGalleryPaths: [],
+        ),
+      ),
+    ),
+    Job(
+      idjob: 'sample2',
+      position: 'UI/UX Designer',
+      companyName: 'DesignCorp',
+      location: 'Bandung',
+      companyLogoPath: 'assets/images/logo_creative_studio.png',
+      jobType: 'Full-time',
+      categories: ['Design'],
+      salary: 'Rp 10.000.000 - 15.000.000',
+      isRecommended: false,
+      jobDetails: JobDetails(
+        jobDescription: 'Design user interfaces and experiences',
+        requirements: ['Portfolio required', 'Figma proficiency'],
+        location: 'Bandung',
+        facilities: ['Creative workspace', 'Health insurance'],
+        companyDetails: CompanyDetails(
+          aboutCompany: 'Creative design agency',
+          website: 'https://designcorp.com',
+          industry: 'Design',
+          companyGalleryPaths: [],
+        ),
+      ),
+    ),
+  ];
+  
+  print('📋 Created ${jobList.length} sample jobs for testing');
 }

@@ -1,5 +1,4 @@
 import 'package:HireMe_Id/utils/setup_mic.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:HireMe_Id/utils/webdav_service.dart';
@@ -20,8 +19,6 @@ class _BrowseViewState extends State<BrowseView> {
   List<Job> recommendedJobs = [];
   List<Map<String, dynamic>> dynamicCategories = [];
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
   @override
   void initState() {
     super.initState();
@@ -29,83 +26,28 @@ class _BrowseViewState extends State<BrowseView> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _initializeDynamicCategories();
     });
-
-    recommendedJobs = jobList.where((job) => job.isRecommended).toList();
   }
 
-  // Tambahkan fungsi refreshJobList
+  // Fungsi refresh data dari Firebase (optional untuk refresh manual)
   Future<void> refreshJobList() async {
-    try {
-      // Ambil data dari Firebase
-      QuerySnapshot snapshot = await _firestore.collection('Jobs').get();
-
-      List<Job> updatedList =
-          List.from(jobList); // Buat copy dari list yang ada
-
-      for (var doc in snapshot.docs) {
-        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-        if (data.containsKey('jobs')) {
-          List<dynamic> firebaseJobs = data['jobs'];
-          for (var jobData in firebaseJobs) {
-            Job newJob = Job(
-              idjob: jobData['id'] ?? '',
-              position: jobData['position'] ?? '',
-              companyName: jobData['companyName'] ?? '',
-              location: jobData['location'] ?? '',
-              companyLogoPath: jobData['companyLogoPath'] ?? '',
-              jobType: jobData['jobType'] ?? '',
-              categories: List<String>.from(jobData['categories'] ?? []),
-              jobDetails: JobDetails(
-                jobDescription: jobData['jobDetails']['jobDescription'] ?? '',
-                requirements: List<String>.from(
-                    jobData['jobDetails']['requirements'] ?? []),
-                location: jobData['jobDetails']['location'] ?? '',
-                facilities: List<String>.from(
-                    jobData['jobDetails']['facilities'] ?? []),
-                companyDetails: CompanyDetails(
-                  aboutCompany: jobData['jobDetails']['companyDetails']
-                          ['aboutCompany'] ??
-                      '',
-                  website:
-                      jobData['jobDetails']['companyDetails']['website'] ?? '',
-                  industry:
-                      jobData['jobDetails']['companyDetails']['industry'] ?? '',
-                  companyGalleryPaths: List<String>.from(
-                    jobData['jobDetails']['companyDetails']
-                            ['companyGalleryPaths'] ??
-                        [],
-                  ),
-                ),
-              ),
-              salary: jobData['salary'] ?? '',
-              isApplied: jobData['isApplied'] ?? false,
-              applyStatus: jobData['applyStatus'] ?? 'inProcess',
-              isRecommended: jobData['isRecommended'] ?? false,
-              isSaved: jobData['isSaved'] ?? false,
-            );
-
-            // Cek duplikasi sebelum menambahkan
-            if (!updatedList.any((job) =>
-                job.position.toLowerCase() == newJob.position.toLowerCase())) {
-              updatedList.add(newJob);
-            }
-          }
-        }
-      }
-
-      // Update state
-      setState(() {
-        jobList = updatedList;
-        recommendedJobs = jobList.where((job) => job.isRecommended).toList();
-      });
-    } catch (e) {
-      print('Error refreshing jobs: $e');
-      // Bisa tambahkan showing error message ke user disini
-    }
+    await fetchJobData(); // Menggunakan fungsi global
+    await _initializeDynamicCategories(); // Update kategori setelah refresh
   }
 
   Future<void> _initializeDynamicCategories() async {
-    await refreshJobList();
+    // Tunggu sebentar jika data belum loaded
+    int retryCount = 0;
+    while (jobList.isEmpty && retryCount < 3) {
+      print('⏳ Waiting for job data... attempt ${retryCount + 1}');
+      await Future.delayed(Duration(seconds: 1));
+      retryCount++;
+    }
+    
+    // Jika masih kosong, coba fetch sekali lagi
+    if (jobList.isEmpty) {
+      print('🔄 Job list still empty, trying to fetch again...');
+      await fetchJobData();
+    }
 
     // Buat map untuk menghitung jobs per kategori
     Map<String, int> categoryJobCount = {};
@@ -117,25 +59,31 @@ class _BrowseViewState extends State<BrowseView> {
       }
     }
 
+    print('📊 Total jobs loaded: ${jobList.length}'); // Debug log
+    print('📊 Category counts: $categoryJobCount'); // Debug log
+
     setState(() {
       dynamicCategories = [
         {
           'name': 'All',
           'icon': Icons.grid_view,
           'iconPath': null,
-          // Total jobs dari initialList
+          // Total jobs dari jobList
           'availableJobs': jobList.length,
         },
         ...jobCategoriesData.map((category) {
+          final count = categoryJobCount[category.name] ?? 0;
           return {
             'name': category.name,
             'icon': null,
             'iconPath': category.iconPath,
             // Ambil count dari map, default 0 jika tidak ada
-            'availableJobs': categoryJobCount[category.name] ?? 0,
+            'availableJobs': count,
           };
         }).toList(),
       ];
+      // Update recommended jobs juga
+      recommendedJobs = jobList.where((job) => job.isRecommended).toList();
     });
   }
 

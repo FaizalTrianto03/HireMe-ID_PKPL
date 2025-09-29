@@ -52,6 +52,7 @@ import 'routes/app_pages.dart';
 import 'utils/setup_mic.dart'; // Import SpeechService
 import 'widgets/navbar_non_login.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'data/job_data.dart'; // Import untuk fetchJobData
 
 // ✅ Import Controllers
 import 'non_login/home/controllers/home_controller.dart';
@@ -62,6 +63,9 @@ void main() async {
   // Load environment variables (.env)
   await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(); // Inisialisasi Firebase
+
+  // ✅ Muat data job dari Firebase saat startup
+  await fetchJobData();
 
   // ✅ Inisialisasi global SpeechService
   final SpeechService speechService = SpeechService();
