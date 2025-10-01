@@ -38,14 +38,12 @@ class _BrowseViewState extends State<BrowseView> {
     // Tunggu sebentar jika data belum loaded
     int retryCount = 0;
     while (jobList.isEmpty && retryCount < 3) {
-      print('⏳ Waiting for job data... attempt ${retryCount + 1}');
       await Future.delayed(Duration(seconds: 1));
       retryCount++;
     }
     
     // Jika masih kosong, coba fetch sekali lagi
     if (jobList.isEmpty) {
-      print('🔄 Job list still empty, trying to fetch again...');
       await fetchJobData();
     }
 
@@ -59,8 +57,7 @@ class _BrowseViewState extends State<BrowseView> {
       }
     }
 
-    print('📊 Total jobs loaded: ${jobList.length}'); // Debug log
-    print('📊 Category counts: $categoryJobCount'); // Debug log
+  // Debug logs removed
 
     setState(() {
       dynamicCategories = [

@@ -30,14 +30,23 @@ class _DetailJobViewState extends State<DetailJobView> {
     final Map<String, dynamic> jobDetails = job['jobDetails'] ?? {};
     final String jobDescription = 
         jobDetails['jobDescription'] ?? 'No Description';
-    // Normalize requirements: support legacy List<String> and new List<Map>
+    // Normalize requirements: support legacy List<String> and new List<Map{ text, isActive }>
     final List<dynamic> rawRequirements =
         jobDetails['requirements'] as List<dynamic>? ?? [];
-    final List<String> requirements = rawRequirements.map((r) {
-      if (r is String) return r;
-      if (r is Map && r.containsKey('text')) return r['text']?.toString() ?? '';
-      return r.toString();
-    }).where((s) => s.isNotEmpty).toList();
+    // Build list of { text: String, isActive: bool }
+    final List<Map<String, dynamic>> requirementItems = rawRequirements.map((r) {
+      if (r is String) {
+        // Legacy string-only requirement treated as active by default
+        return {'text': r, 'isActive': true};
+      }
+      if (r is Map) {
+        return {
+          'text': (r['text'] ?? '').toString(),
+          'isActive': r['isActive'] == true,
+        };
+      }
+      return {'text': r.toString(), 'isActive': true};
+    }).where((e) => (e['text'] as String).isNotEmpty).toList();
 
     // Normalize facilities similarly (in case stored as objects)
     final List<dynamic> rawFacilities = jobDetails['facilities'] as List<dynamic>? ?? [];
@@ -334,8 +343,8 @@ class _DetailJobViewState extends State<DetailJobView> {
                   ),
                 ],
               ),
-              child: showDescription
-                  ? _buildJobDescription(jobDescription, requirements, facilities)
+        child: showDescription
+          ? _buildJobDescription(jobDescription, requirementItems, facilities)
                   : _buildCompanyDetails(aboutCompany, industry, website, companyGalleryPaths),
             ),
           ],
@@ -344,7 +353,7 @@ class _DetailJobViewState extends State<DetailJobView> {
     );
   }
 
-  Widget _buildJobDescription(String jobDescription, List<String> requirements, List<String> facilities) {
+  Widget _buildJobDescription(String jobDescription, List<Map<String, dynamic>> requirements, List<String> facilities) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -360,18 +369,49 @@ class _DetailJobViewState extends State<DetailJobView> {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        ...requirements
-            .map((req) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
+        ...requirements.map((req) {
+          final String text = (req['text'] ?? '').toString();
+          final bool isActive = req['isActive'] == true;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('• ', style: TextStyle(fontSize: 16)),
+                Expanded(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('• ', style: TextStyle(fontSize: 16)),
-                      Expanded(child: Text(req)),
+                      Expanded(
+                        child: Text(
+                          text,
+                          style: TextStyle(
+                            color: isActive ? Colors.black : Colors.grey,
+                            decoration: isActive ? TextDecoration.none : TextDecoration.lineThrough,
+                          ),
+                        ),
+                      ),
+                      if (!isActive)
+                        Container(
+                          margin: const EdgeInsets.only(left: 8, top: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade400, width: 0.5),
+                          ),
+                          child: const Text(
+                            'Nonaktif',
+                            style: TextStyle(fontSize: 10, color: Colors.grey),
+                          ),
+                        ),
                     ],
                   ),
-                ))
-            .toList(),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
         const SizedBox(height: 16),
         const Text(
           'Facilities & Benefits:',

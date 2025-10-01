@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # HireMe.id – Aplikasi Pencarian Kerja Mobile
 
 HireMe.id adalah aplikasi Flutter untuk mencari lowongan pekerjaan dengan pengalaman pengguna yang modern. Pengguna dapat menjelajah pekerjaan, melakukan pencarian (termasuk voice search), serta login menggunakan email/password atau Google. Admin dapat mengelola Event promosi/rekrutmen yang tampil sebagai slider di beranda.
@@ -123,5 +122,3 @@ Jika tidak ingin build sendiri, gunakan APK yang telah disediakan di Google Driv
 Hak cipta milik pemilik proyek. Penggunaan kode di luar tujuan proyek ini harap dikonsultasikan terlebih dahulu.
 
 =======
-First Setup Repository
->>>>>>> 4378c5530a9d2e382d01ba5de123ed220a8ed909

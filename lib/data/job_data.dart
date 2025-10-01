@@ -71,7 +71,6 @@ List<Job> jobList = [];
 // Fungsi untuk fetch data dari Firestore secara pure
 Future<void> fetchJobData() async {
   try {
-    print('🔥 Starting to fetch job data from Firestore...');
     
     // Clear list untuk memastikan tidak ada duplikasi
     jobList.clear();
@@ -79,40 +78,49 @@ Future<void> fetchJobData() async {
     // Ambil data dari Firebase collection 'Jobs'
     final snapshot = await _firestore.collection('Jobs').get();
     
-    print('📄 Found ${snapshot.docs.length} documents in Jobs collection');
-    
     for (var doc in snapshot.docs) {
       Map<String, dynamic> data = doc.data();
-      print('📋 Processing document: ${doc.id}');
-      print('📋 Document data keys: ${data.keys.toList()}');
       
       if (data.containsKey('jobs')) {
         List<dynamic> firebaseJobs = data['jobs'];
-        print('💼 Found ${firebaseJobs.length} jobs in document ${doc.id}');
         
         for (var jobData in firebaseJobs) {
           try {
             // Normalize requirements to List<String> from either List<String> or List<Map>
+            // Rule:
+            // - If ANY item has an 'isActive' flag, we assume the new schema and include ONLY items with isActive == true
+            //   (ignore raw strings to prevent showing unchecked ones from legacy data).
+            // - If NO item has 'isActive' (legacy schema), include all string items and map items' text.
             List<String> normalizeRequirements(dynamic raw) {
               final result = <String>[];
-              if (raw is List) {
-                for (final item in raw) {
-                  if (item is String) {
+              if (raw is! List) return result;
+
+              bool hasActiveFlag = false;
+              for (final item in raw) {
+                if (item is Map && item.containsKey('isActive')) {
+                  hasActiveFlag = true;
+                  break;
+                }
+              }
+
+              for (final item in raw) {
+                if (item is Map) {
+                  final text = (item['text'] ?? '').toString();
+                  if (text.isEmpty) continue;
+                  if (hasActiveFlag) {
+                    if (item['isActive'] == true) result.add(text);
+                  } else {
+                    // Legacy schema without isActive: include all map texts
+                    result.add(text);
+                  }
+                } else if (item is String) {
+                  // Include strings only if no active-flagged items exist (legacy schema)
+                  if (!hasActiveFlag && item.trim().isNotEmpty) {
                     result.add(item);
-                  } else if (item is Map) {
-                    final isActive = item['isActive'] == true;
-                    final text = (item['text'] ?? '').toString();
-                    if (text.isNotEmpty) {
-                      // Only include active requirements if flag exists
-                      if (item.containsKey('isActive')) {
-                        if (isActive) result.add(text);
-                      } else {
-                        result.add(text);
-                      }
-                    }
                   }
                 }
               }
+
               return result;
             }
 
@@ -148,32 +156,18 @@ Future<void> fetchJobData() async {
             // Cek duplikasi berdasarkan idjob sebelum menambahkan
             if (!jobList.any((existingJob) => existingJob.idjob == newJob.idjob)) {
               jobList.add(newJob);
-              print('✅ Added job: ${newJob.position} at ${newJob.companyName}');
             } else {
-              print('⚠️ Skipped duplicate job: ${newJob.position}');
             }
           } catch (e) {
-            print('❌ Error processing individual job: $e');
           }
         }
       } else {
-        print('⚠️ Document ${doc.id} does not contain "jobs" field');
       }
     }
     
-    print('🎉 Successfully loaded ${jobList.length} jobs from Firestore');
-    
-    // Debug: Print sample data
-    if (jobList.isNotEmpty) {
-      print('📝 Sample job: ${jobList.first.position} - ${jobList.first.categories}');
-    }
-    
   } catch (error) {
-    print('💥 Error fetching Firebase data: $error');
-    
     // Buat beberapa sample data jika Firebase gagal (hanya untuk testing)
     if (jobList.isEmpty) {
-      print('🚨 No data from Firebase, creating minimal sample data...');
       _createSampleData();
     }
   }
@@ -229,6 +223,4 @@ void _createSampleData() {
       ),
     ),
   ];
-  
-  print('📋 Created ${jobList.length} sample jobs for testing');
 }
