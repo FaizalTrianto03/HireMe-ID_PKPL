@@ -324,17 +324,37 @@ class JobController extends GetxController {
                 },
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Harap bersabar, ini memakan sedikit waktu...',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Poppins',
-                  color: Color(0xFF6750A4),
-                  fontWeight: FontWeight.w400,
-                  height: 1.5,
-                  decoration: TextDecoration.none,
-                ),
+              ValueListenableBuilder<double>(
+                valueListenable: progressValue,
+                builder: (context, value, child) {
+                  String message = 'Memulai proses...';
+                  if (value < 0.15) {
+                    message = 'Memeriksa akun Anda...';
+                  } else if (value < 0.25) {
+                    message = 'Memvalidasi semua field...';
+                  } else if (value < 0.35) {
+                    message = 'Mengecek duplikasi job...';
+                  } else if (value < 0.5) {
+                    message = 'Menyiapkan data job...';
+                  } else if (value < 0.8) {
+                    message = 'Menyimpan ke database...';
+                  } else if (value < 1.0) {
+                    message = 'Hampir selesai...';
+                  }
+                  
+                  return Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Poppins',
+                      color: Color(0xFF6750A4),
+                      fontWeight: FontWeight.w400,
+                      height: 1.5,
+                      decoration: TextDecoration.none,
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -349,13 +369,28 @@ class JobController extends GetxController {
       // Dapatkan email pengguna saat ini
       final String? email = auth.currentUser?.email;
       if (email == null) {
-        throw Exception("User not logged in.");
+        Get.back(); // Close dialog
+        Get.snackbar(
+          'Error',
+          'User not logged in. Please login again.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red[700],
+          colorText: Colors.white,
+          icon: const Icon(Icons.error_outline, color: Colors.white),
+        );
+        isLoading.value = false;
+        return;
       }
       progressValue.value = 0.1;
 
       // Pastikan daftar pekerjaan sudah diambil
       if (jobs.isEmpty) {
         await fetchJobs();
+      }
+      
+      // Pastikan data recruiter ada
+      if (recruiterData.isEmpty) {
+        await fetchRecruiterData();
       }
       progressValue.value = 0.2;
 
@@ -395,15 +430,10 @@ class JobController extends GetxController {
       }
       progressValue.value = 0.3;
 
-      // Data recruiter harus tersedia
-      if (recruiterData.isEmpty) {
-        await fetchRecruiterData();
-      }
-      progressValue.value = 0.4;
-
-      // Ambil data recruiter dari Firestore
+      // Ambil data recruiter dari Firestore (sudah di-fetch di awal)
       final companyName = recruiterData['company_name'] ?? 'Unknown Company';
       final companyLogoPath = recruiterData['profile_image'] ?? '';
+      progressValue.value = 0.4;
 
       // Generate idjob
       final random = Random();
@@ -452,16 +482,34 @@ class JobController extends GetxController {
       // Tambahkan ke daftar jobs lokal
       jobs.add(newJob);
 
-      // Proses cleaning file yang tidak digunakan
-      print("🧹 Starting cleaning process...");
       await _cleanUnusedGalleryImages(email);
       progressValue.value = 1.0;
 
       Get.back(); // Tutup dialog
-      Get.snackbar('Success', 'Job added successfully.');
+      Get.snackbar(
+        'Success',
+        'Job added successfully!',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.green[700],
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+      );
     } catch (e) {
-      Get.back(); // Tutup dialog jika terjadi error
-      Get.snackbar('Error', 'Failed to add job: $e');
+      // Hanya tangkap error yang bukan dari validasi
+      if (Get.isDialogOpen ?? false) {
+        Get.back(); // Tutup dialog jika masih ada
+      }
+      Get.snackbar(
+        'Error',
+        'Failed to add job: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red[700],
+        colorText: Colors.white,
+        duration: const Duration(seconds: 4),
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      print("❌ Error in addJob: $e");
     } finally {
       isLoading.value = false;
     }
@@ -645,11 +693,29 @@ class JobController extends GetxController {
       progressValue.value = 1.0;
 
       Get.back();
-      Get.snackbar('Success', 'Job updated successfully.');
+      Get.snackbar(
+        'Success',
+        'Job updated successfully!',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.green[700],
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+      );
     } catch (e) {
-      if (Get.isDialogOpen ?? false) Get.back();
-      Get.snackbar('Error', 'Failed to update job: $e');
-      rethrow;
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+      Get.snackbar(
+        'Error',
+        'Failed to update job: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red[700],
+        colorText: Colors.white,
+        duration: const Duration(seconds: 4),
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      print("❌ Error in updateJob: $e");
     }
 }
 
@@ -847,9 +913,26 @@ class JobController extends GetxController {
       await jobsDocRef.update({'jobs': updatedJobs});
       jobs.value = updatedJobs;
 
-      Get.snackbar('Success', 'Job deleted successfully.');
+      Get.snackbar(
+        'Success',
+        'Job deleted successfully!',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.green[700],
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+      );
     } catch (e) {
-      Get.snackbar('Error', 'Failed to delete job: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to delete job: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red[700],
+        colorText: Colors.white,
+        duration: const Duration(seconds: 4),
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      print("❌ Error in deleteJob: $e");
     } finally {
       isLoading.value = false;
     }
@@ -961,28 +1044,21 @@ class JobController extends GetxController {
 // Fungsi untuk membersihkan file yang tidak terpakai
   Future<void> _cleanUnusedGalleryImages(String email) async {
     try {
-      print("🧹 Cleaning started for email: $email");
 
       // Ambil semua URL yang digunakan dari Firestore
       final List<String> usedFileNames = await _fetchUsedGalleryFileNames(email);
-
-      print("🔗 Used paths from Jobs:");
-      for (final path in usedFileNames) {
-        print("- $path");
-      }
-
       // Hapus file yang tidak digunakan dari WebDAV (filter berdasarkan prefix email_)
-      print("🔍 Checking and cleaning unused WebDAV files:");
+
       final webdav = WebDAVService();
       final allFiles = await webdav.listFiles();
       for (final remoteName in allFiles) {
         // only consider files uploaded for this email (we use prefix email_)
         if (!remoteName.startsWith('${email}_')) continue;
         if (!usedFileNames.contains(remoteName)) {
-          print('❌ Deleting unused WebDAV file: $remoteName');
+         
           await webdav.deleteFile(remoteName);
         } else {
-          print('✅ Keeping WebDAV file: $remoteName');
+     ;
         }
       }
 
