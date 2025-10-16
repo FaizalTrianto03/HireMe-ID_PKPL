@@ -51,31 +51,138 @@ class AuthController extends GetxController {
     }
   }
 
+  // ============================================
+  // KEBUTUHAN FUNGSIONAL LOGIN
+  // ============================================
+  // FR-LOGIN-001: Validasi Format Email dan Kekuatan Password
+  // FR-LOGIN-002: Verifikasi Status Akun dan Role User
+  
+  /// Validasi format email (FR-LOGIN-001)
+  /// Test Positif: Email valid (user@example.com) -> return true
+  /// Test Negatif: Email invalid (userexample.com, @example.com, user@) -> return false & show error
+  bool validateEmailFormat(String email) {
+    if (email.trim().isEmpty) {
+      _showErrorSnackbar("Validation Error", "Email cannot be empty");
+      return false;
+    }
+    
+    // Regex untuk validasi format email
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    );
+    
+    if (!emailRegex.hasMatch(email.trim())) {
+      _showErrorSnackbar("Validation Error", "Invalid email format. Please use format: user@example.com");
+      return false;
+    }
+    
+    return true;
+  }
+  
+  /// Validasi kekuatan password untuk login (FR-LOGIN-001)
+  /// Test Positif: Password minimal 6 karakter -> return true
+  /// Test Negatif: Password < 6 karakter -> return false & show error
+  bool validatePasswordStrength(String password, {bool isRegistration = false}) {
+    if (password.isEmpty) {
+      _showErrorSnackbar("Validation Error", "Password cannot be empty");
+      return false;
+    }
+    
+    if (isRegistration) {
+      // Untuk registration, password harus lebih kuat
+      if (password.length < 8) {
+        _showErrorSnackbar("Validation Error", "Password must be at least 8 characters long");
+        return false;
+      }
+      
+      // Cek apakah password mengandung huruf dan angka
+      final hasLetter = RegExp(r'[a-zA-Z]').hasMatch(password);
+      final hasNumber = RegExp(r'[0-9]').hasMatch(password);
+      
+      if (!hasLetter || !hasNumber) {
+        _showErrorSnackbar("Validation Error", 
+          "Password must contain both letters and numbers for security");
+        return false;
+      }
+    } else {
+      // Untuk login, minimal 6 karakter (Firebase default)
+      if (password.length < 6) {
+        _showErrorSnackbar("Validation Error", "Password must be at least 6 characters long");
+        return false;
+      }
+    }
+    
+    return true;
+  }
+
   // Login dengan email dan password
   Future<void> login(String email, String password) async {
     try {
+      // FR-LOGIN-001: Validasi format email dan password
+      if (!validateEmailFormat(email)) {
+        return; // Stop jika email tidak valid
+      }
+      
+      if (!validatePasswordStrength(password)) {
+        return; // Stop jika password tidak valid
+      }
+      
       await _auth.signInWithEmailAndPassword(email: email, password: password);
 
-      // Cek role dari Firestore
+      // FR-LOGIN-002: Verifikasi status akun dan role user
+      // Test Positif: Account exists dengan role valid -> navigate ke halaman sesuai role
+      // Test Negatif: Account tidak ada atau role invalid -> show error & logout
       final docSnapshot =
           await _firestore.collection('Accounts').doc(email).get();
-      if (docSnapshot.exists) {
-        final role = docSnapshot.data()?['role'] ?? '';
-
-        // Navigasi sesuai role
-        if (role == 'jobseeker') {
-          Get.offAll(() => NavbarLoggedIn());
-        } else if (role == 'recruiter') {
-          Get.offAll(() => NavbarRecruiter());
-        } else if (role == 'admin') {
-          Get.offAll(() => NavbarAdmin());
-        } else {
-          _showErrorSnackbar("Login Error", "Unknown user role");
-          return;
-        }
-      } else {
-        _showErrorSnackbar("Login Error", "Account not found in database");
+      
+      if (!docSnapshot.exists) {
+        // Account tidak ditemukan di database
+        await _auth.signOut(); // Logout dari Firebase Auth
+        _showErrorSnackbar("Login Error", 
+          "Account not found in database. Please register first or contact support.");
         return;
+      }
+      
+      final accountData = docSnapshot.data();
+      if (accountData == null) {
+        await _auth.signOut();
+        _showErrorSnackbar("Login Error", "Account data is corrupted. Please contact support.");
+        return;
+      }
+      
+      // Validasi role
+      final role = accountData['role'] ?? '';
+      if (role.isEmpty) {
+        await _auth.signOut();
+        _showErrorSnackbar("Login Error", "Account role is not set. Please contact support.");
+        return;
+      }
+      
+      // Cek apakah account di-disable (optional field untuk future enhancement)
+      final isDisabled = accountData['is_disabled'] ?? false;
+      if (isDisabled) {
+        await _auth.signOut();
+        _showErrorSnackbar("Login Error", 
+          "This account has been disabled. Please contact support for assistance.");
+        return;
+      }
+      
+      // Validasi role yang diizinkan
+      final List<String> allowedRoles = ['jobseeker', 'recruiter', 'admin'];
+      if (!allowedRoles.contains(role)) {
+        await _auth.signOut();
+        _showErrorSnackbar("Login Error", 
+          "Invalid account role: $role. Please contact support.");
+        return;
+      }
+
+      // Navigasi sesuai role
+      if (role == 'jobseeker') {
+        Get.offAll(() => NavbarLoggedIn());
+      } else if (role == 'recruiter') {
+        Get.offAll(() => NavbarRecruiter());
+      } else if (role == 'admin') {
+        Get.offAll(() => NavbarAdmin());
       }
 
       // Simpan status login jika Remember Me aktif
@@ -114,10 +221,84 @@ class AuthController extends GetxController {
     }
   }
 
+  // ============================================
+  // KEBUTUHAN FUNGSIONAL REGISTER
+  // ============================================
+  // FR-REGISTER-001: Validasi Keunikan Email dan Kompleksitas Password
+  // FR-REGISTER-002: Validasi Field Required dan Role Selection
+  
+  /// Validasi keunikan email sebelum registrasi (FR-REGISTER-001)
+  /// Test Positif: Email belum terdaftar -> return true
+  /// Test Negatif: Email sudah terdaftar -> return false & show error
+  Future<bool> validateEmailUniqueness(String email) async {
+    try {
+      // Cek di Firebase Auth
+      final methods = await _auth.fetchSignInMethodsForEmail(email);
+      if (methods.isNotEmpty) {
+        _showErrorSnackbar("Registration Error", 
+          "This email is already registered. Please use a different email or try logging in.");
+        return false;
+      }
+      
+      // Double check di Firestore
+      final docSnapshot = await _firestore.collection('Accounts').doc(email).get();
+      if (docSnapshot.exists) {
+        _showErrorSnackbar("Registration Error", 
+          "This email is already registered in our system. Please login instead.");
+        return false;
+      }
+      
+      return true;
+    } catch (e) {
+      _showErrorSnackbar("Validation Error", 
+        "Failed to verify email uniqueness. Please check your internet connection.");
+      return false;
+    }
+  }
+  
+  /// Validasi role selection (FR-REGISTER-002)
+  /// Test Positif: Role adalah 'jobseeker' atau 'recruiter' -> return true
+  /// Test Negatif: Role kosong atau invalid -> return false & show error
+  bool validateRoleSelection(String role) {
+    if (role.isEmpty) {
+      _showErrorSnackbar("Validation Error", "Please select your account type (Job Seeker or Recruiter)");
+      return false;
+    }
+    
+    final allowedRoles = ['jobseeker', 'recruiter'];
+    if (!allowedRoles.contains(role.toLowerCase())) {
+      _showErrorSnackbar("Validation Error", "Invalid account type selected. Please choose Job Seeker or Recruiter.");
+      return false;
+    }
+    
+    return true;
+  }
+
   // Fungsi registrasi untuk Job Seeker
   Future<void> register_job(String email, String password) async {
     try {
-      UserCredential userCredential = await _auth
+      // FR-REGISTER-001: Validasi format email
+      if (!validateEmailFormat(email)) {
+        return;
+      }
+      
+      // FR-REGISTER-001: Validasi kompleksitas password untuk registrasi
+      if (!validatePasswordStrength(password, isRegistration: true)) {
+        return;
+      }
+      
+      // FR-REGISTER-001: Validasi keunikan email
+      final isUnique = await validateEmailUniqueness(email);
+      if (!isUnique) {
+        return;
+      }
+      
+      // FR-REGISTER-002: Validasi role
+      if (!validateRoleSelection('jobseeker')) {
+        return;
+      }
+      
+      await _auth
           .createUserWithEmailAndPassword(email: email, password: password);
 
       await _firestore.collection('Accounts').doc(email).set({
@@ -164,7 +345,28 @@ class AuthController extends GetxController {
   // Fungsi registrasi untuk Recruiter
   Future<void> register_recruiter(String email, String password) async {
     try {
-      UserCredential userCredential = await _auth
+      // FR-REGISTER-001: Validasi format email
+      if (!validateEmailFormat(email)) {
+        return;
+      }
+      
+      // FR-REGISTER-001: Validasi kompleksitas password untuk registrasi
+      if (!validatePasswordStrength(password, isRegistration: true)) {
+        return;
+      }
+      
+      // FR-REGISTER-001: Validasi keunikan email
+      final isUnique = await validateEmailUniqueness(email);
+      if (!isUnique) {
+        return;
+      }
+      
+      // FR-REGISTER-002: Validasi role
+      if (!validateRoleSelection('recruiter')) {
+        return;
+      }
+      
+      await _auth
           .createUserWithEmailAndPassword(email: email, password: password);
 
       await _firestore.collection('Accounts').doc(email).set({

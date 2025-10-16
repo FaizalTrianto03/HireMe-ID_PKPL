@@ -19,6 +19,12 @@ class JobController extends GetxController {
   var isLoading = false.obs; // Observable untuk status loading
   final RxList<String> galleryImageUrls = <String>[].obs; // Daftar URL galeri
   late final Directory tempDir;
+  
+  // ============================================
+  // KEBUTUHAN FUNGSIONAL CRUD JOB
+  // ============================================
+  // FR-JOB-001: Validasi Field Required dan Format Data
+  // FR-JOB-002: Pencegahan Data Duplikat dan Integritas Data
 
   @override
   void onInit() {
@@ -33,6 +39,221 @@ class JobController extends GetxController {
     } catch (e) {
       print("❗ Error initializing temporary directory: $e");
     }
+  }
+  
+  /// Validasi field required untuk job (FR-JOB-001)
+  /// Test Positif: Semua field required terisi dengan benar -> return true
+  /// Test Negatif: Ada field yang kosong atau invalid -> return false & show error
+  bool validateJobRequiredFields({
+    required String position,
+    required String location,
+    required String jobType,
+    required List<String> categories,
+    required String jobDescription,
+    required List<dynamic> requirements,
+    required String salary,
+    required String aboutCompany,
+    required String industry,
+    required String website,
+    required List<String> facilities,
+    required List<String> companyGalleryPaths,
+  }) {
+    final List<String> errors = [];
+    
+    // Validasi position (tidak boleh kosong, minimal 3 karakter)
+    if (position.trim().isEmpty) {
+      errors.add("Job position is required");
+    } else if (position.trim().length < 3) {
+      errors.add("Job position must be at least 3 characters");
+    }
+    
+    // Validasi location
+    if (location.trim().isEmpty) {
+      errors.add("Location is required");
+    } else if (location.trim().length < 3) {
+      errors.add("Location must be at least 3 characters");
+    }
+    
+    // Validasi job type
+    final allowedJobTypes = ['Full-time', 'Part-time', 'Contract', 'Freelance'];
+    if (jobType.isEmpty) {
+      errors.add("Job type is required");
+    } else if (!allowedJobTypes.contains(jobType)) {
+      errors.add("Invalid job type. Must be Full-time, Part-time, Contract, or Freelance");
+    }
+    
+    // Validasi categories (minimal 1 kategori)
+    if (categories.isEmpty) {
+      errors.add("At least one job category is required");
+    } else if (categories.length > 5) {
+      errors.add("Maximum 5 job categories allowed");
+    }
+    
+    // Validasi job description (minimal 50 karakter)
+    if (jobDescription.trim().isEmpty) {
+      errors.add("Job description is required");
+    } else if (jobDescription.trim().length < 50) {
+      errors.add("Job description must be at least 50 characters");
+    }
+    
+    // Validasi requirements (minimal 1 requirement)
+    if (requirements.isEmpty) {
+      errors.add("At least one job requirement is required");
+    } else {
+      // Validasi setiap requirement
+      for (var i = 0; i < requirements.length; i++) {
+        String reqText = '';
+        if (requirements[i] is String) {
+          reqText = requirements[i];
+        } else if (requirements[i] is Map && requirements[i]['text'] != null) {
+          reqText = requirements[i]['text'];
+        }
+        
+        if (reqText.trim().isEmpty) {
+          errors.add("Requirement ${i + 1} cannot be empty");
+        } else if (reqText.trim().length < 5) {
+          errors.add("Requirement ${i + 1} must be at least 5 characters");
+        }
+      }
+    }
+    
+    // Validasi salary (format dan nilai)
+    if (salary.trim().isEmpty) {
+      errors.add("Salary range is required");
+    } else if (salary.trim().length < 5) {
+      errors.add("Please provide a valid salary range (e.g., IDR 5,000,000 - 10,000,000)");
+    }
+    
+    // Validasi about company (minimal 30 karakter)
+    if (aboutCompany.trim().isEmpty) {
+      errors.add("Company description is required");
+    } else if (aboutCompany.trim().length < 30) {
+      errors.add("Company description must be at least 30 characters");
+    }
+    
+    // Validasi industry
+    if (industry.trim().isEmpty) {
+      errors.add("Industry is required");
+    }
+    
+    // Validasi website (format URL)
+    if (website.trim().isEmpty) {
+      errors.add("Company website is required");
+    } else {
+      final urlPattern = RegExp(
+        r'^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}',
+        caseSensitive: false,
+      );
+      if (!urlPattern.hasMatch(website.trim())) {
+        errors.add("Invalid website URL format. Must include domain (e.g., www.company.com)");
+      }
+    }
+    
+    // Validasi facilities (minimal 1 benefit)
+    if (facilities.isEmpty || (facilities.length == 1 && facilities[0].trim().isEmpty)) {
+      errors.add("At least one benefit/facility is required");
+    }
+    
+    // Validasi company gallery (minimal 1 gambar)
+    if (companyGalleryPaths.isEmpty) {
+      errors.add("At least one company gallery image is required");
+    } else if (companyGalleryPaths.length > 10) {
+      errors.add("Maximum 10 company gallery images allowed");
+    }
+    
+    // Tampilkan error jika ada
+    if (errors.isNotEmpty) {
+      Get.snackbar(
+        'Validation Failed',
+        errors.join('\n'),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red[700],
+        colorText: Colors.white,
+        duration: const Duration(seconds: 5),
+        margin: const EdgeInsets.all(16),
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        maxWidth: 500,
+      );
+      return false;
+    }
+    
+    return true;
+  }
+  
+  /// Validasi duplicate job position (FR-JOB-002)
+  /// Test Positif: Job position belum ada -> return true
+  /// Test Negatif: Job position sudah ada (case insensitive) -> return false & show error
+  bool validateJobUniqueness(String position, {int? excludeJobIndex}) {
+    final normalizedPosition = position.trim().toLowerCase();
+    
+    for (var i = 0; i < jobs.length; i++) {
+      // Skip jika ini adalah job yang sedang di-edit
+      if (excludeJobIndex != null && i == excludeJobIndex) {
+        continue;
+      }
+      
+      final existingPosition = (jobs[i]['position'] ?? '').toString().toLowerCase();
+      if (existingPosition == normalizedPosition) {
+        Get.snackbar(
+          'Duplicate Job Position',
+          'A job with the position "$position" already exists. Please use a different position title.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange[700],
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+          margin: const EdgeInsets.all(16),
+          icon: const Icon(Icons.warning_amber_rounded, color: Colors.white),
+        );
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  
+  /// Validasi data integrity untuk update (FR-JOB-002)
+  /// Test Positif: Index valid dan data consistent -> return true
+  /// Test Negatif: Index invalid atau data corrupted -> return false & show error
+  bool validateJobDataIntegrity(int jobIndex) {
+    if (jobIndex < 0) {
+      Get.snackbar(
+        'Invalid Operation',
+        'Job index cannot be negative',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red[700],
+        colorText: Colors.white,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      return false;
+    }
+    
+    if (jobIndex >= jobs.length) {
+      Get.snackbar(
+        'Job Not Found',
+        'The selected job no longer exists. Please refresh the job list.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red[700],
+        colorText: Colors.white,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      return false;
+    }
+    
+    // Validasi struktur data job
+    final job = jobs[jobIndex];
+    if (job['idjob'] == null || job['idjob'].toString().isEmpty) {
+      Get.snackbar(
+        'Data Corrupted',
+        'Job data is corrupted (missing ID). Please contact support.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red[700],
+        colorText: Colors.white,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      return false;
+    }
+    
+    return true;
   }
 
   // Fungsi menambahkan pekerjaan baru ke Firestore
@@ -138,11 +359,30 @@ class JobController extends GetxController {
       }
       progressValue.value = 0.2;
 
-      // Validasi: Cek apakah job position sudah ada (case insensitive)
-      final bool isDuplicate = jobs.any((job) =>
-          (job['position'] ?? '').toString().toLowerCase() ==
-          position.toLowerCase());
-      if (isDuplicate) {
+      // FR-JOB-001: Validasi field required dan format data
+      final isValidFields = validateJobRequiredFields(
+        position: position,
+        location: location,
+        jobType: jobType,
+        categories: categories,
+        jobDescription: jobDescription,
+        requirements: requirements,
+        salary: salary,
+        aboutCompany: aboutCompany,
+        industry: industry,
+        website: website,
+        facilities: facilities,
+        companyGalleryPaths: companyGalleryPaths,
+      );
+      
+      if (!isValidFields) {
+        throw Exception("Validation failed. Please check all required fields.");
+      }
+      
+      progressValue.value = 0.25;
+
+      // FR-JOB-002: Validasi duplicate job position
+      if (!validateJobUniqueness(position)) {
         throw Exception("Job position already exists.");
       }
       progressValue.value = 0.3;
@@ -323,6 +563,12 @@ class JobController extends GetxController {
         throw Exception("User not logged in.");
       }
       progressValue.value = 0.1;
+      
+      // FR-JOB-002: Validasi data integrity
+      if (!validateJobDataIntegrity(jobIndex)) {
+        throw Exception("Job data integrity check failed.");
+      }
+      progressValue.value = 0.15;
 
       final jobsDocRef = firestore.collection('Jobs').doc(email);
       final jobsSnapshot = await jobsDocRef.get();
@@ -336,6 +582,30 @@ class JobController extends GetxController {
         throw Exception("Invalid job index.");
       }
       final Map<String, dynamic> jobData = Map<String, dynamic>.from(allJobs[jobIndex]);
+      progressValue.value = 0.25;
+      
+      // FR-JOB-001: Validasi jika ada perubahan field required
+      if (updatedFields.containsKey('position')) {
+        final newPosition = updatedFields['position'] as String;
+        
+        // FR-JOB-002: Cek duplicate position (kecuali dengan posisi sendiri)
+        if (!validateJobUniqueness(newPosition, excludeJobIndex: jobIndex)) {
+          throw Exception("Job position already exists.");
+        }
+        
+        // Validasi format position
+        if (newPosition.trim().isEmpty || newPosition.trim().length < 3) {
+          Get.snackbar(
+            'Validation Error',
+            'Job position must be at least 3 characters',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red[700],
+            colorText: Colors.white,
+            icon: const Icon(Icons.error_outline, color: Colors.white),
+          );
+          throw Exception("Invalid job position format.");
+        }
+      }
       progressValue.value = 0.35;
 
       // Update hanya field yang diberikan tanpa mengganti seluruh struktur
@@ -529,6 +799,11 @@ class JobController extends GetxController {
       if (email == null) {
         throw Exception("User not logged in.");
       }
+      
+      // FR-JOB-002: Validasi data integrity sebelum delete
+      if (!validateJobDataIntegrity(jobIndex)) {
+        throw Exception("Cannot delete job. Data integrity check failed.");
+      }
 
       final jobsDocRef = firestore.collection('Jobs').doc(email);
       final jobsDoc = await jobsDocRef.get();
@@ -544,6 +819,10 @@ class JobController extends GetxController {
       if (jobIndex >= updatedJobs.length) {
         throw Exception("Invalid job index.");
       }
+      
+      // Simpan info job yang akan dihapus untuk konfirmasi
+      final deletedJobTitle = updatedJobs[jobIndex]['position'] ?? 'Unknown';
+      print("🗑️ Deleting job: $deletedJobTitle");
 
       updatedJobs.removeAt(jobIndex);
 
