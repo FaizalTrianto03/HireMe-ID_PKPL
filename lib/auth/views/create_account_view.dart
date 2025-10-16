@@ -13,7 +13,7 @@ class _CreateAccountViewState extends State<CreateAccountView> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool _isPasswordHidden = true;
-  String selectedRole = 'jobseeker'; // Default role
+  String selectedRole = 'jobseeker'; // Default role - 
 
   Widget _buildRoleSelector() {
     return Container(
@@ -31,8 +31,8 @@ class _CreateAccountViewState extends State<CreateAccountView> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: selectedRole == 'jobseeker' 
-                      ? Colors.white 
+                  color: selectedRole == 'jobseeker'
+                      ? Colors.white
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -42,7 +42,7 @@ class _CreateAccountViewState extends State<CreateAccountView> {
                     Icon(
                       Icons.person_search,
                       size: 20,
-                      color: selectedRole == 'jobseeker' 
+                      color: selectedRole == 'jobseeker'
                           ? const Color(0xFF6B34BE)
                           : Colors.white,
                     ),
@@ -52,7 +52,7 @@ class _CreateAccountViewState extends State<CreateAccountView> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: selectedRole == 'jobseeker' 
+                        color: selectedRole == 'jobseeker'
                             ? const Color(0xFF6B34BE)
                             : Colors.white,
                       ),
@@ -68,8 +68,8 @@ class _CreateAccountViewState extends State<CreateAccountView> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: selectedRole == 'recruiter' 
-                      ? Colors.white 
+                  color: selectedRole == 'recruiter'
+                      ? Colors.white
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -79,7 +79,7 @@ class _CreateAccountViewState extends State<CreateAccountView> {
                     Icon(
                       Icons.business_center,
                       size: 20,
-                      color: selectedRole == 'recruiter' 
+                      color: selectedRole == 'recruiter'
                           ? const Color(0xFF6B34BE)
                           : Colors.white,
                     ),
@@ -89,7 +89,7 @@ class _CreateAccountViewState extends State<CreateAccountView> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: selectedRole == 'recruiter' 
+                        color: selectedRole == 'recruiter'
                             ? const Color(0xFF6B34BE)
                             : Colors.white,
                       ),
@@ -142,7 +142,7 @@ class _CreateAccountViewState extends State<CreateAccountView> {
                     ),
                   ),
                   const SizedBox(height: 40),
-                  
+
                   // Role selector ditambahkan di sini
                   _buildRoleSelector(),
 
@@ -164,9 +164,11 @@ class _CreateAccountViewState extends State<CreateAccountView> {
                       decoration: InputDecoration(
                         labelText: "Email",
                         labelStyle: const TextStyle(color: Colors.grey),
-                        prefixIcon: const Icon(Icons.email, color: Color(0xFF6B34BE)),
+                        prefixIcon:
+                            const Icon(Icons.email, color: Color(0xFF6B34BE)),
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                        contentPadding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 16),
                       ),
                       style: const TextStyle(fontSize: 16),
                     ),
@@ -192,10 +194,13 @@ class _CreateAccountViewState extends State<CreateAccountView> {
                       decoration: InputDecoration(
                         labelText: "Password",
                         labelStyle: const TextStyle(color: Colors.grey),
-                        prefixIcon: const Icon(Icons.lock, color: Color(0xFF6B34BE)),
+                        prefixIcon:
+                            const Icon(Icons.lock, color: Color(0xFF6B34BE)),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _isPasswordHidden ? Icons.visibility_off : Icons.visibility,
+                            _isPasswordHidden
+                                ? Icons.visibility_off
+                                : Icons.visibility,
                             color: Colors.grey,
                           ),
                           onPressed: () {
@@ -205,7 +210,8 @@ class _CreateAccountViewState extends State<CreateAccountView> {
                           },
                         ),
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                        contentPadding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 16),
                       ),
                       style: const TextStyle(fontSize: 16),
                     ),
@@ -214,75 +220,115 @@ class _CreateAccountViewState extends State<CreateAccountView> {
 
                   // Create Account Button
                   SizedBox(
-  width: double.infinity,
-  child: ElevatedButton(
-    onPressed: () {
-      // Panggil fungsi berbeda berdasarkan role
-      if (selectedRole == 'jobseeker') {
-        authController.register_job(emailController.text, passwordController.text);
-      } else {
-        authController.register_recruiter(emailController.text, passwordController.text);
-      }
-    },
-    style: ElevatedButton.styleFrom(
-      backgroundColor: const Color(0xFF6B34BE),
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      elevation: 5,
-    ),
-    child: Text(
-      // Ubah text button sesuai role
-      selectedRole == 'jobseeker' 
-          ? "Create Job Seeker Account" 
-          : "Create Recruiter Account",
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-      ),
-    ),
-  ),
-),
-const SizedBox(height: 16),
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Validasi strict: cek role jobseeker
+                        if (selectedRole == 'jobseeker') {
+                          authController.register_job(
+                            emailController.text,
+                            passwordController.text,
+                          );
+                          return; // Early return untuk prevent fallthrough
+                        }
 
-// Google Login Button
-SizedBox(
-  width: double.infinity,
-  child: OutlinedButton.icon(
-    onPressed: () {
-      // Panggil fungsi berbeda untuk Google sign up berdasarkan role
-      if (selectedRole == 'jobseeker') {
-        authController.loginWithGoogle_job();
-      } else {
-        authController.loginWithGoogle_recruiter();
-      }
-    },
-    icon: Image.asset(
-      'assets/images/google.png',
-      height: 24,
-    ),
-    label: Text(
-      // Ubah text button sesuai role
-      selectedRole == 'jobseeker'
-          ? "Sign Up as Job Seeker with Google"
-          : "Sign Up as Recruiter with Google",
-      style: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-      ),
-    ),
-    style: OutlinedButton.styleFrom(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      side: const BorderSide(color: Colors.white),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-    ),
-  ),
-),
+                        // Validasi strict: cek role recruiter
+                        if (selectedRole == 'recruiter') {
+                          authController.register_recruiter(
+                            emailController.text,
+                            passwordController.text,
+                          );
+                          return; // Early return untuk prevent fallthrough
+                        }
+
+                        // Jika sampai sini, berarti role invalid
+                        Get.snackbar(
+                          'Invalid Role',
+                          'Please select a valid account type (Job Seeker or Recruiter)',
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: Colors.red[700],
+                          colorText: Colors.white,
+                          duration: const Duration(seconds: 3),
+                          margin: const EdgeInsets.all(16),
+                          icon: const Icon(Icons.error_outline, color: Colors.white),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6B34BE),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 5,
+                      ),
+                      child: Text(
+                        // Ubah text button sesuai role
+                        selectedRole == 'jobseeker'
+                            ? "Create Job Seeker Account"
+                            : "Create Recruiter Account",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Google Login Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        // Validasi strict: cek role jobseeker
+                        if (selectedRole == 'jobseeker') {
+                          authController.loginWithGoogle_job();
+                          return; // Early return untuk prevent fallthrough
+                        }
+
+                        // Validasi strict: cek role recruiter
+                        if (selectedRole == 'recruiter') {
+                          authController.loginWithGoogle_recruiter();
+                          return; // Early return untuk prevent fallthrough
+                        }
+
+                        // Jika sampai sini, berarti role invalid
+                        Get.snackbar(
+                          'Invalid Role',
+                          'Please select a valid account type (Job Seeker or Recruiter)',
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: Colors.red[700],
+                          colorText: Colors.white,
+                          duration: const Duration(seconds: 3),
+                          margin: const EdgeInsets.all(16),
+                          icon: const Icon(Icons.error_outline, color: Colors.white),
+                        );
+                      },
+                      icon: Image.asset(
+                        'assets/images/google.png',
+                        height: 24,
+                      ),
+                      label: Text(
+                        // Ubah text button sesuai role
+                        selectedRole == 'jobseeker'
+                            ? "Sign Up as Job Seeker with Google"
+                            : "Sign Up as Recruiter with Google",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: const BorderSide(color: Colors.white),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 24),
 
                   // Login Suggestion

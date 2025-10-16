@@ -376,14 +376,22 @@ class JobController extends GetxController {
       );
       
       if (!isValidFields) {
-        throw Exception("Validation failed. Please check all required fields.");
+        // Close progress dialog
+        Get.back();
+        isLoading.value = false;
+        // Specific error sudah muncul dari validateJobRequiredFields()
+        return; // Early return - JANGAN throw exception!
       }
       
       progressValue.value = 0.25;
 
       // FR-JOB-002: Validasi duplicate job position
       if (!validateJobUniqueness(position)) {
-        throw Exception("Job position already exists.");
+        // Close progress dialog
+        Get.back();
+        isLoading.value = false;
+        // Specific error sudah muncul dari validateJobUniqueness()
+        return; // Early return - JANGAN throw exception!
       }
       progressValue.value = 0.3;
 
@@ -566,7 +574,10 @@ class JobController extends GetxController {
       
       // FR-JOB-002: Validasi data integrity
       if (!validateJobDataIntegrity(jobIndex)) {
-        throw Exception("Job data integrity check failed.");
+        // Close progress dialog
+        Get.back();
+        // Specific error sudah muncul dari validateJobDataIntegrity()
+        return; // Early return - JANGAN throw exception!
       }
       progressValue.value = 0.15;
 
@@ -590,11 +601,16 @@ class JobController extends GetxController {
         
         // FR-JOB-002: Cek duplicate position (kecuali dengan posisi sendiri)
         if (!validateJobUniqueness(newPosition, excludeJobIndex: jobIndex)) {
-          throw Exception("Job position already exists.");
+          // Close progress dialog
+          Get.back();
+          // Specific error sudah muncul dari validateJobUniqueness()
+          return; // Early return - JANGAN throw exception!
         }
         
         // Validasi format position
         if (newPosition.trim().isEmpty || newPosition.trim().length < 3) {
+          // Close progress dialog
+          Get.back();
           Get.snackbar(
             'Validation Error',
             'Job position must be at least 3 characters',
@@ -603,7 +619,7 @@ class JobController extends GetxController {
             colorText: Colors.white,
             icon: const Icon(Icons.error_outline, color: Colors.white),
           );
-          throw Exception("Invalid job position format.");
+          return; // Early return - JANGAN throw exception!
         }
       }
       progressValue.value = 0.35;
@@ -802,7 +818,9 @@ class JobController extends GetxController {
       
       // FR-JOB-002: Validasi data integrity sebelum delete
       if (!validateJobDataIntegrity(jobIndex)) {
-        throw Exception("Cannot delete job. Data integrity check failed.");
+        isLoading.value = false;
+        // Specific error sudah muncul dari validateJobDataIntegrity()
+        return; // Early return - JANGAN throw exception!
       }
 
       final jobsDocRef = firestore.collection('Jobs').doc(email);
