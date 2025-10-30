@@ -102,6 +102,10 @@ class JobController extends GetxController {
       _showValidationError("Job description must be at least 50 characters");
       return false;
     }
+    if (jobDescription.trim().length > 300) {
+      _showValidationError("Job description must not exceed 300 characters");
+      return false;
+    }
     
     // Validasi 6: Requirements
     if (requirements.isEmpty) {
@@ -149,6 +153,10 @@ class JobController extends GetxController {
     }
     if (aboutCompany.trim().length < 30) {
       _showValidationError("Company description must be at least 30 characters");
+      return false;
+    }
+    if (aboutCompany.trim().length > 150) {
+      _showValidationError("Company description must not exceed 150 characters");
       return false;
     }
     
