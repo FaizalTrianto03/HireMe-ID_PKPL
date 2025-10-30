@@ -60,9 +60,6 @@ class _BrowseViewState extends State<BrowseView> {
       }
     }
 
-    print('📊 Total jobs loaded: ${jobList.length}'); // Debug log
-    print('📊 Category counts: $categoryJobCount'); // Debug log
-
     setState(() {
       dynamicCategories = [
         {

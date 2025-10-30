@@ -34,8 +34,6 @@ Future<void> debugJobData() async {
     
     // 2. Check local jobList after fetch
     await fetchJobData();
-    print('\n=== LOCAL JOB LIST ===');
-    print('Total jobs loaded: ${jobList.length}');
     
     // Count by category
     Map<String, int> categoryCount = {};

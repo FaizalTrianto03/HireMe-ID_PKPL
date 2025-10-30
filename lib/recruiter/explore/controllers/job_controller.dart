@@ -12,19 +12,15 @@ import 'package:image_picker/image_picker.dart';
 class JobController extends GetxController {
   final FirebaseAuth auth = FirebaseAuth.instance;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  // Firebase Storage replaced by WebDAV for media storage
 
-  var jobs = <Map<String, dynamic>>[].obs; // Observable untuk daftar pekerjaan
-  var recruiterData = {}.obs; // Observable untuk data recruiter
-  var isLoading = false.obs; // Observable untuk status loading
-  final RxList<String> galleryImageUrls = <String>[].obs; // Daftar URL galeri
+  var jobs = <Map<String, dynamic>>[].obs;
+  var recruiterData = {}.obs;
+  var isLoading = false.obs;
+  final RxList<String> galleryImageUrls = <String>[].obs;
   late final Directory tempDir;
   
-  // ============================================
-  // KEBUTUHAN FUNGSIONAL CRUD JOB
-  // ============================================
-  // FR-JOB-001: Validasi Field Required dan Format Data
-  // FR-JOB-002: Pencegahan Data Duplikat dan Integritas Data
+  // FR-JOB-001: validasi field required dan format data
+  // FR-JOB-002: pencegahan data duplikat dan integritas data
 
   @override
   void onInit() {
@@ -35,15 +31,13 @@ class JobController extends GetxController {
   Future<void> initTemporaryDirectory() async {
     try {
       tempDir = await getTemporaryDirectory();
-      print("✅ Temporary directory initialized: ${tempDir.path}");
+      print("Temporary directory initialized: ${tempDir.path}");
     } catch (e) {
-      print("❗ Error initializing temporary directory: $e");
+      print("Error initializing temporary directory: $e");
     }
   }
   
-  /// Validasi field required untuk job (FR-JOB-001)
-  /// Test Positif: Semua field required terisi dengan benar -> return true
-  /// Test Negatif: Ada field yang kosong atau invalid -> return false & show error
+  // validasi field satu per satu secara sequential
   bool validateJobRequiredFields({
     required String position,
     required String location,
@@ -58,152 +52,164 @@ class JobController extends GetxController {
     required List<String> facilities,
     required List<String> companyGalleryPaths,
   }) {
-    final List<String> errors = [];
-    
-    // Validasi position (tidak boleh kosong, minimal 3 karakter)
+    // Validasi 1: Job Position
     if (position.trim().isEmpty) {
-      errors.add("Job position is required");
-    } else if (position.trim().length < 3) {
-      errors.add("Job position must be at least 3 characters");
+      _showValidationError("Job position is required");
+      return false;
+    }
+    if (position.trim().length < 3) {
+      _showValidationError("Job position must be at least 3 characters");
+      return false;
     }
     
-    // Validasi location
+    // Validasi 2: Location
     if (location.trim().isEmpty) {
-      errors.add("Location is required");
-    } else if (location.trim().length < 3) {
-      errors.add("Location must be at least 3 characters");
+      _showValidationError("Location is required");
+      return false;
+    }
+    if (location.trim().length < 3) {
+      _showValidationError("Location must be at least 3 characters");
+      return false;
     }
     
-    // Validasi job type
+    // Validasi 3: Job Type
     final allowedJobTypes = ['Full-time', 'Part-time', 'Contract', 'Freelance'];
     if (jobType.isEmpty) {
-      errors.add("Job type is required");
-    } else if (!allowedJobTypes.contains(jobType)) {
-      errors.add("Invalid job type. Must be Full-time, Part-time, Contract, or Freelance");
+      _showValidationError("Job type is required");
+      return false;
+    }
+    if (!allowedJobTypes.contains(jobType)) {
+      _showValidationError("Invalid job type. Must be Full-time, Part-time, Contract, or Freelance");
+      return false;
     }
     
-    // Validasi categories (minimal 1 kategori)
+    // Validasi 4: Categories
     if (categories.isEmpty) {
-      errors.add("At least one job category is required");
-    } else if (categories.length > 5) {
-      errors.add("Maximum 5 job categories allowed");
+      _showValidationError("At least one job category is required");
+      return false;
+    }
+    if (categories.length > 5) {
+      _showValidationError("Maximum 5 job categories allowed");
+      return false;
     }
     
-    // Validasi job description (minimal 50 karakter)
+    // Validasi 5: Job Description
     if (jobDescription.trim().isEmpty) {
-      errors.add("Job description is required");
-    } else if (jobDescription.trim().length < 50) {
-      errors.add("Job description must be at least 50 characters");
+      _showValidationError("Job description is required");
+      return false;
+    }
+    if (jobDescription.trim().length < 50) {
+      _showValidationError("Job description must be at least 50 characters");
+      return false;
     }
     
-    // Validasi requirements (minimal 1 requirement)
+    // Validasi 6: Requirements
     if (requirements.isEmpty) {
-      errors.add("At least one job requirement is required");
-    } else {
-      // Validasi setiap requirement
-      for (var i = 0; i < requirements.length; i++) {
-        String reqText = '';
-        if (requirements[i] is String) {
-          reqText = requirements[i];
-        } else if (requirements[i] is Map && requirements[i]['text'] != null) {
-          reqText = requirements[i]['text'];
-        }
-        
-        if (reqText.trim().isEmpty) {
-          errors.add("Requirement ${i + 1} cannot be empty");
-        } else if (reqText.trim().length < 5) {
-          errors.add("Requirement ${i + 1} must be at least 5 characters");
-        }
+      _showValidationError("At least one job requirement is required");
+      return false;
+    }
+    for (var i = 0; i < requirements.length; i++) {
+      String reqText = '';
+      if (requirements[i] is String) {
+        reqText = requirements[i];
+      } else if (requirements[i] is Map && requirements[i]['text'] != null) {
+        reqText = requirements[i]['text'];
+      }
+      
+      if (reqText.trim().isEmpty) {
+        _showValidationError("Requirement ${i + 1} cannot be empty");
+        return false;
+      }
+      if (reqText.trim().length < 5) {
+        _showValidationError("Requirement ${i + 1} must be at least 5 characters");
+        return false;
       }
     }
     
-    // Validasi salary (format dan nilai)
-    if (salary.trim().isEmpty) {
-      errors.add("Salary range is required");
-    } else if (salary.trim().length < 5) {
-      errors.add("Please provide a valid salary range (e.g., IDR 5,000,000 - 10,000,000)");
-    }
-    
-    // Validasi about company (minimal 30 karakter)
-    if (aboutCompany.trim().isEmpty) {
-      errors.add("Company description is required");
-    } else if (aboutCompany.trim().length < 30) {
-      errors.add("Company description must be at least 30 characters");
-    }
-    
-    // Validasi industry
-    if (industry.trim().isEmpty) {
-      errors.add("Industry is required");
-    }
-    
-    // Validasi website (format URL)
-    if (website.trim().isEmpty) {
-      errors.add("Company website is required");
-    } else {
-      final urlPattern = RegExp(
-        r'^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}',
-        caseSensitive: false,
-      );
-      if (!urlPattern.hasMatch(website.trim())) {
-        errors.add("Invalid website URL format. Must include domain (e.g., www.company.com)");
-      }
-    }
-    
-    // Validasi facilities (minimal 1 benefit)
+    // Validasi 7: Facilities
     if (facilities.isEmpty || (facilities.length == 1 && facilities[0].trim().isEmpty)) {
-      errors.add("At least one benefit/facility is required");
+      _showValidationError("At least one benefit/facility is required");
+      return false;
     }
     
-    // Validasi company gallery (minimal 1 gambar)
+    // Validasi 8: Salary
+    if (salary.trim().isEmpty) {
+      _showValidationError("Salary range is required");
+      return false;
+    }
+    if (salary.trim().length < 5) {
+      _showValidationError("Please provide a valid salary range (e.g., IDR 5,000,000 - 10,000,000)");
+      return false;
+    }
+    
+    // Validasi 9: About Company
+    if (aboutCompany.trim().isEmpty) {
+      _showValidationError("Company description is required");
+      return false;
+    }
+    if (aboutCompany.trim().length < 30) {
+      _showValidationError("Company description must be at least 30 characters");
+      return false;
+    }
+    
+    // Validasi 10: Industry
+    if (industry.trim().isEmpty) {
+      _showValidationError("Industry is required");
+      return false;
+    }
+    
+    // Validasi 11: Website
+    if (website.trim().isEmpty) {
+      _showValidationError("Company website is required");
+      return false;
+    }
+    final urlPattern = RegExp(
+      r'^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}',
+      caseSensitive: false,
+    );
+    if (!urlPattern.hasMatch(website.trim())) {
+      _showValidationError("Invalid website URL format. Must include domain (e.g., www.company.com)");
+      return false;
+    }
+    
+    // Validasi 12: Company Gallery
     if (companyGalleryPaths.isEmpty) {
-      errors.add("At least one company gallery image is required");
-    } else if (companyGalleryPaths.length > 10) {
-      errors.add("Maximum 10 company gallery images allowed");
+      _showValidationError("At least one company gallery image is required");
+      return false;
     }
-    
-    // Tampilkan error jika ada
-    if (errors.isNotEmpty) {
-      Get.snackbar(
-        'Validation Failed',
-        errors.join('\n'),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red[700],
-        colorText: Colors.white,
-        duration: const Duration(seconds: 5),
-        margin: const EdgeInsets.all(16),
-        icon: const Icon(Icons.error_outline, color: Colors.white),
-        maxWidth: 500,
-      );
+    if (companyGalleryPaths.length > 10) {
+      _showValidationError("Maximum 10 company gallery images allowed");
       return false;
     }
     
     return true;
   }
   
-  /// Validasi duplicate job position (FR-JOB-002)
-  /// Test Positif: Job position belum ada -> return true
-  /// Test Negatif: Job position sudah ada (case insensitive) -> return false & show error
+  void _showValidationError(String message) {
+    Get.snackbar(
+      'Validation Failed',
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red[700],
+      colorText: Colors.white,
+      duration: const Duration(seconds: 4),
+      margin: const EdgeInsets.all(16),
+      icon: const Icon(Icons.error_outline, color: Colors.white),
+    );
+  }
+  
+  // cek duplicate job position (case insensitive)
   bool validateJobUniqueness(String position, {int? excludeJobIndex}) {
     final normalizedPosition = position.trim().toLowerCase();
     
     for (var i = 0; i < jobs.length; i++) {
-      // Skip jika ini adalah job yang sedang di-edit
       if (excludeJobIndex != null && i == excludeJobIndex) {
         continue;
       }
       
       final existingPosition = (jobs[i]['position'] ?? '').toString().toLowerCase();
       if (existingPosition == normalizedPosition) {
-        Get.snackbar(
-          'Duplicate Job Position',
-          'A job with the position "$position" already exists. Please use a different position title.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.orange[700],
-          colorText: Colors.white,
-          duration: const Duration(seconds: 4),
-          margin: const EdgeInsets.all(16),
-          icon: const Icon(Icons.warning_amber_rounded, color: Colors.white),
-        );
+        _showValidationError('A job with the position "$position" already exists. Please use a different position title.');
         return false;
       }
     }
@@ -211,53 +217,28 @@ class JobController extends GetxController {
     return true;
   }
   
-  /// Validasi data integrity untuk update (FR-JOB-002)
-  /// Test Positif: Index valid dan data consistent -> return true
-  /// Test Negatif: Index invalid atau data corrupted -> return false & show error
+  // validasi index dan struktur data job sebelum update/delete
   bool validateJobDataIntegrity(int jobIndex) {
     if (jobIndex < 0) {
-      Get.snackbar(
-        'Invalid Operation',
-        'Job index cannot be negative',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red[700],
-        colorText: Colors.white,
-        icon: const Icon(Icons.error_outline, color: Colors.white),
-      );
+      _showValidationError('Job index cannot be negative');
       return false;
     }
     
     if (jobIndex >= jobs.length) {
-      Get.snackbar(
-        'Job Not Found',
-        'The selected job no longer exists. Please refresh the job list.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red[700],
-        colorText: Colors.white,
-        icon: const Icon(Icons.error_outline, color: Colors.white),
-      );
+      _showValidationError('The selected job no longer exists. Please refresh the job list.');
       return false;
     }
     
-    // Validasi struktur data job
     final job = jobs[jobIndex];
     if (job['idjob'] == null || job['idjob'].toString().isEmpty) {
-      Get.snackbar(
-        'Data Corrupted',
-        'Job data is corrupted (missing ID). Please contact support.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red[700],
-        colorText: Colors.white,
-        icon: const Icon(Icons.error_outline, color: Colors.white),
-      );
+      _showValidationError('Job data is corrupted (missing ID). Please contact support.');
       return false;
     }
     
     return true;
   }
 
-  // Fungsi menambahkan pekerjaan baru ke Firestore
-  Future<void> addJob({
+  Future<bool> addJob({
     required String position,
     required String location,
     required String jobType,
@@ -271,130 +252,28 @@ class JobController extends GetxController {
     required String website,
     required List<String> companyGalleryPaths,
   }) async {
-    progressValue.value = 0.0;
-
-    Get.dialog(
-      Center(
-        child: Container(
-          width: Get.width * 0.8,
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ValueListenableBuilder<double>(
-                valueListenable: progressValue,
-                builder: (context, value, child) {
-                  return Column(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: LinearProgressIndicator(
-                          value: value,
-                          color: const Color(0xFF6750A4),
-                          backgroundColor:
-                              const Color(0xFF6750A4).withOpacity(0.1),
-                          minHeight: 8,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '${(value * 100).toInt()}%',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Poppins',
-                          color: Color(0xFF6750A4),
-                          fontWeight: FontWeight.w600,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-              ValueListenableBuilder<double>(
-                valueListenable: progressValue,
-                builder: (context, value, child) {
-                  String message = 'Memulai proses...';
-                  if (value < 0.15) {
-                    message = 'Memeriksa akun Anda...';
-                  } else if (value < 0.25) {
-                    message = 'Memvalidasi semua field...';
-                  } else if (value < 0.35) {
-                    message = 'Mengecek duplikasi job...';
-                  } else if (value < 0.5) {
-                    message = 'Menyiapkan data job...';
-                  } else if (value < 0.8) {
-                    message = 'Menyimpan ke database...';
-                  } else if (value < 1.0) {
-                    message = 'Hampir selesai...';
-                  }
-                  
-                  return Text(
-                    message,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Poppins',
-                      color: Color(0xFF6750A4),
-                      fontWeight: FontWeight.w400,
-                      height: 1.5,
-                      decoration: TextDecoration.none,
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-      barrierDismissible: false,
-    );
+    isLoading.value = true;
 
     try {
-      isLoading.value = true;
-
-      // Dapatkan email pengguna saat ini
+      // Step 1: Cek user login
       final String? email = auth.currentUser?.email;
       if (email == null) {
-        Get.back(); // Close dialog
-        Get.snackbar(
-          'Error',
-          'User not logged in. Please login again.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red[700],
-          colorText: Colors.white,
-          icon: const Icon(Icons.error_outline, color: Colors.white),
-        );
+        _showValidationError('User not logged in. Please login again.');
         isLoading.value = false;
-        return;
+        return false;
       }
-      progressValue.value = 0.1;
 
-      // Pastikan daftar pekerjaan sudah diambil
+      // Step 2: Load data jobs jika belum ada
       if (jobs.isEmpty) {
         await fetchJobs();
       }
       
-      // Pastikan data recruiter ada
+      // Step 3: Load data recruiter jika belum ada
       if (recruiterData.isEmpty) {
         await fetchRecruiterData();
       }
-      progressValue.value = 0.2;
 
-      // FR-JOB-001: Validasi field required dan format data
+      // Step 4: Validasi semua field required (sequential)
       final isValidFields = validateJobRequiredFields(
         position: position,
         location: location,
@@ -411,37 +290,27 @@ class JobController extends GetxController {
       );
       
       if (!isValidFields) {
-        // Close progress dialog
-        Get.back();
         isLoading.value = false;
-        // Specific error sudah muncul dari validateJobRequiredFields()
-        return; // Early return - JANGAN throw exception!
+        return false;
       }
-      
-      progressValue.value = 0.25;
 
-      // FR-JOB-002: Validasi duplicate job position
+      // Step 5: Cek duplikat job position
       if (!validateJobUniqueness(position)) {
-        // Close progress dialog
-        Get.back();
         isLoading.value = false;
-        // Specific error sudah muncul dari validateJobUniqueness()
-        return; // Early return - JANGAN throw exception!
+        return false;
       }
-      progressValue.value = 0.3;
 
-      // Ambil data recruiter dari Firestore (sudah di-fetch di awal)
+      // Step 6: Ambil data company dari recruiter
       final companyName = recruiterData['company_name'] ?? 'Unknown Company';
       final companyLogoPath = recruiterData['profile_image'] ?? '';
-      progressValue.value = 0.4;
 
-      // Generate idjob
+      // Step 7: Generate ID job
       final random = Random();
       final String idjob =
           List.generate(10, (_) => String.fromCharCode(65 + random.nextInt(26)))
               .join();
 
-      // Buat data pekerjaan baru
+      // Step 8: Buat struktur job baru
       final newJob = {
         'idjob': idjob,
         'position': position,
@@ -469,7 +338,7 @@ class JobController extends GetxController {
         'isSaved': false,
       };
 
-      // Simpan pekerjaan ke Firestore
+      // Step 9: Simpan ke Firestore
       final jobsDocRef = firestore.collection('Jobs').doc(email);
       await jobsDocRef.set(
         {
@@ -477,45 +346,34 @@ class JobController extends GetxController {
         },
         SetOptions(merge: true),
       );
-      progressValue.value = 0.5;
 
-      // Tambahkan ke daftar jobs lokal
+      // Step 10: Update local jobs list
       jobs.add(newJob);
 
+      // Step 11: Cleanup unused gallery images
       await _cleanUnusedGalleryImages(email);
-      progressValue.value = 1.0;
 
-      Get.back(); // Tutup dialog
+      // Step 12: SEMUA SUKSES - Tampilkan success message
       Get.snackbar(
         'Success',
-        'Job added successfully!',
+        'Job has been posted successfully!',
         snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.green[700],
         colorText: Colors.white,
         duration: const Duration(seconds: 3),
         icon: const Icon(Icons.check_circle, color: Colors.white),
       );
-    } catch (e) {
-      // Hanya tangkap error yang bukan dari validasi
-      if (Get.isDialogOpen ?? false) {
-        Get.back(); // Tutup dialog jika masih ada
-      }
-      Get.snackbar(
-        'Error',
-        'Failed to add job: ${e.toString()}',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red[700],
-        colorText: Colors.white,
-        duration: const Duration(seconds: 4),
-        icon: const Icon(Icons.error_outline, color: Colors.white),
-      );
-      print("❌ Error in addJob: $e");
-    } finally {
+      
       isLoading.value = false;
+      return true;
+    } catch (e) {
+      _showValidationError('Failed to add job: ${e.toString()}');
+      print("Error in addJob: $e");
+      isLoading.value = false;
+      return false;
     }
   }
 
-  // Fungsi mengambil semua pekerjaan recruiter dari Firestore
   Future<void> fetchJobs() async {
     try {
       isLoading.value = true;
@@ -539,140 +397,126 @@ class JobController extends GetxController {
     }
   }
 
-  // Fungsi memperbarui pekerjaan tertentu
   final progressValue = ValueNotifier<double>(0.0);
 
-  Future<void> updateJob(int jobIndex, Map<String, dynamic> updatedFields) async {
-    progressValue.value = 0.0;
-    Get.dialog(
-      Center(
-        child: Container(
-          width: Get.width * 0.8,
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ValueListenableBuilder<double>(
-                valueListenable: progressValue,
-                builder: (context, value, child) {
-                  return Column(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: LinearProgressIndicator(
-                          value: value,
-                          color: const Color(0xFF6750A4),
-                          backgroundColor: const Color(0xFF6750A4).withOpacity(0.1),
-                          minHeight: 8,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '${(value * 100).toInt()}%',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Poppins',
-                          color: Color(0xFF6750A4),
-                          fontWeight: FontWeight.w600,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Harap bersabar, ini memakan sedikit waktu...',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Poppins',
-                  color: Color(0xFF6750A4),
-                  fontWeight: FontWeight.w400,
-                  height: 1.5,
-                  decoration: TextDecoration.none,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      barrierDismissible: false,
-    );
-
+  Future<bool> updateJob(int jobIndex, Map<String, dynamic> updatedFields) async {
+    isLoading.value = true;
+    
     try {
+      // Step 1: Cek user login
       final String? email = auth.currentUser?.email;
       if (email == null) {
-        throw Exception("User not logged in.");
+        _showValidationError('User not logged in.');
+        isLoading.value = false;
+        return false;
       }
-      progressValue.value = 0.1;
-      
-      // FR-JOB-002: Validasi data integrity
-      if (!validateJobDataIntegrity(jobIndex)) {
-        // Close progress dialog
-        Get.back();
-        // Specific error sudah muncul dari validateJobDataIntegrity()
-        return; // Early return - JANGAN throw exception!
-      }
-      progressValue.value = 0.15;
 
+      // Step 2: Ambil data jobs dari Firestore
       final jobsDocRef = firestore.collection('Jobs').doc(email);
       final jobsSnapshot = await jobsDocRef.get();
       if (!jobsSnapshot.exists) {
-        throw Exception("No jobs found for the current user.");
+        _showValidationError('No jobs found');
+        isLoading.value = false;
+        return false;
       }
-      progressValue.value = 0.2;
 
+      // Step 3: Cek index valid
       final List<dynamic> allJobs = jobsSnapshot.data()?['jobs'] ?? [];
       if (jobIndex < 0 || jobIndex >= allJobs.length) {
-        throw Exception("Invalid job index.");
+        _showValidationError('Cannot update job. The job index ($jobIndex) is invalid. Available jobs: ${allJobs.length}');
+        isLoading.value = false;
+        return false;
       }
-      final Map<String, dynamic> jobData = Map<String, dynamic>.from(allJobs[jobIndex]);
-      progressValue.value = 0.25;
       
-      // FR-JOB-001: Validasi jika ada perubahan field required
+      // Step 4: Ambil data job yang akan diupdate
+      final Map<String, dynamic> jobData = Map<String, dynamic>.from(allJobs[jobIndex]);
+      
+      // Step 5: Extract semua field dari updatedFields untuk validasi
+      String position = jobData['position'] ?? '';
+      String location = jobData['location'] ?? '';
+      String jobType = jobData['jobType'] ?? '';
+      List<String> categories = List<String>.from(jobData['categories'] ?? []);
+      String salary = jobData['salary'] ?? '';
+      
+      Map<String, dynamic> jobDetails = Map<String, dynamic>.from(jobData['jobDetails'] ?? {});
+      String jobDescription = jobDetails['jobDescription'] ?? '';
+      List<dynamic> requirements = jobDetails['requirements'] ?? [];
+      List<String> facilities = List<String>.from(jobDetails['facilities'] ?? []);
+      
+      Map<String, dynamic> companyDetails = Map<String, dynamic>.from(jobDetails['companyDetails'] ?? {});
+      String aboutCompany = companyDetails['aboutCompany'] ?? '';
+      String industry = companyDetails['industry'] ?? '';
+      String website = companyDetails['website'] ?? '';
+      List<String> companyGalleryPaths = List<String>.from(companyDetails['companyGalleryPaths'] ?? []);
+      
+      // Step 6: Apply updated fields ke variabel lokal
       if (updatedFields.containsKey('position')) {
-        final newPosition = updatedFields['position'] as String;
-        
-        // FR-JOB-002: Cek duplicate position (kecuali dengan posisi sendiri)
-        if (!validateJobUniqueness(newPosition, excludeJobIndex: jobIndex)) {
-          // Close progress dialog
-          Get.back();
-          // Specific error sudah muncul dari validateJobUniqueness()
-          return; // Early return - JANGAN throw exception!
-        }
-        
-        // Validasi format position
-        if (newPosition.trim().isEmpty || newPosition.trim().length < 3) {
-          // Close progress dialog
-          Get.back();
-          Get.snackbar(
-            'Validation Error',
-            'Job position must be at least 3 characters',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red[700],
-            colorText: Colors.white,
-            icon: const Icon(Icons.error_outline, color: Colors.white),
-          );
-          return; // Early return - JANGAN throw exception!
+        position = updatedFields['position'] as String;
+      }
+      if (updatedFields.containsKey('location')) {
+        location = updatedFields['location'] as String;
+      }
+      if (updatedFields.containsKey('jobType')) {
+        jobType = updatedFields['jobType'] as String;
+      }
+      if (updatedFields.containsKey('categories')) {
+        categories = List<String>.from(updatedFields['categories']);
+      }
+      if (updatedFields.containsKey('salary')) {
+        salary = updatedFields['salary'] as String;
+      }
+      if (updatedFields.containsKey('jobDetails.jobDescription')) {
+        jobDescription = updatedFields['jobDetails.jobDescription'] as String;
+      }
+      if (updatedFields.containsKey('jobDetails.requirements')) {
+        requirements = updatedFields['jobDetails.requirements'];
+      }
+      if (updatedFields.containsKey('jobDetails.facilities')) {
+        facilities = List<String>.from(updatedFields['jobDetails.facilities']);
+      }
+      if (updatedFields.containsKey('jobDetails.companyDetails.aboutCompany')) {
+        aboutCompany = updatedFields['jobDetails.companyDetails.aboutCompany'] as String;
+      }
+      if (updatedFields.containsKey('jobDetails.companyDetails.industry')) {
+        industry = updatedFields['jobDetails.companyDetails.industry'] as String;
+      }
+      if (updatedFields.containsKey('jobDetails.companyDetails.website')) {
+        website = updatedFields['jobDetails.companyDetails.website'] as String;
+      }
+      if (updatedFields.containsKey('jobDetails.companyDetails.companyGalleryPaths')) {
+        companyGalleryPaths = List<String>.from(updatedFields['jobDetails.companyDetails.companyGalleryPaths']);
+      }
+      
+      // Step 7: Validasi semua field (sequential)
+      final isValidFields = validateJobRequiredFields(
+        position: position,
+        location: location,
+        jobType: jobType,
+        categories: categories,
+        jobDescription: jobDescription,
+        requirements: requirements,
+        salary: salary,
+        aboutCompany: aboutCompany,
+        industry: industry,
+        website: website,
+        facilities: facilities,
+        companyGalleryPaths: companyGalleryPaths,
+      );
+      
+      if (!isValidFields) {
+        isLoading.value = false;
+        return false;
+      }
+      
+      // Step 8: Cek uniqueness jika position berubah
+      if (updatedFields.containsKey('position')) {
+        if (!validateJobUniqueness(position, excludeJobIndex: jobIndex)) {
+          isLoading.value = false;
+          return false;
         }
       }
-      progressValue.value = 0.35;
-
-      // Update hanya field yang diberikan tanpa mengganti seluruh struktur
+      
+      // Step 9: Apply perubahan ke jobData
       updatedFields.forEach((key, value) {
         if (key.contains('.')) {
           final keys = key.split('.');
@@ -685,14 +529,12 @@ class JobController extends GetxController {
           jobData[key] = value;
         }
       });
-      progressValue.value = 0.6;
 
-      // Replace job yang diupdate di array lalu simpan
+      // Step 10: Update ke Firestore
       allJobs[jobIndex] = jobData;
       await jobsDocRef.update({'jobs': allJobs});
-      progressValue.value = 1.0;
 
-      Get.back();
+      // Step 11: SEMUA SUKSES - Tampilkan success message
       Get.snackbar(
         'Success',
         'Job updated successfully!',
@@ -702,110 +544,39 @@ class JobController extends GetxController {
         duration: const Duration(seconds: 3),
         icon: const Icon(Icons.check_circle, color: Colors.white),
       );
+      
+      isLoading.value = false;
+      return true;
     } catch (e) {
-      if (Get.isDialogOpen ?? false) {
-        Get.back();
-      }
-      Get.snackbar(
-        'Error',
-        'Failed to update job: ${e.toString()}',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red[700],
-        colorText: Colors.white,
-        duration: const Duration(seconds: 4),
-        icon: const Icon(Icons.error_outline, color: Colors.white),
-      );
-      print("❌ Error in updateJob: $e");
+      _showValidationError('Failed to update job: ${e.toString()}');
+      print("Error in updateJob: $e");
+      isLoading.value = false;
+      return false;
     }
-}
+  }
 
 
   Future<void> updateJob2(
       int jobIndex, Map<String, dynamic> updatedFields) async {
-    progressValue.value = 0.0;
-
-    Get.dialog(
-      Center(
-        child: Container(
-          width: Get.width * 0.8,
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ValueListenableBuilder<double>(
-                valueListenable: progressValue,
-                builder: (context, value, child) {
-                  return Column(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: LinearProgressIndicator(
-                          value: value,
-                          color: const Color(0xFF6750A4),
-                          backgroundColor:
-                              const Color(0xFF6750A4).withOpacity(0.1),
-                          minHeight: 8,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '${(value * 100).toInt()}%',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Poppins',
-                          color: Color(0xFF6750A4),
-                          fontWeight: FontWeight.w600,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Harap bersabar, ini memakan sedikit waktu...',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Poppins',
-                  color: Color(0xFF6750A4),
-                  fontWeight: FontWeight.w400,
-                  height: 1.5,
-                  decoration: TextDecoration.none,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      barrierDismissible: false,
-    );
-
     try {
       isLoading.value = true;
 
       final String? email = auth.currentUser?.email;
       if (email == null) {
-        throw Exception("User not logged in.");
+        Get.snackbar(
+          'Error',
+          'User not logged in.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red[700],
+          colorText: Colors.white,
+          icon: const Icon(Icons.error_outline, color: Colors.white),
+        );
+        isLoading.value = false;
+        return;
       }
-      progressValue.value = 0.1;
 
       final jobsDocRef = firestore.collection('Jobs').doc(email);
 
-      // Ambil data asli dari Firestore
       final jobsDoc = await jobsDocRef.get();
       if (!jobsDoc.exists) {
         throw Exception("No jobs found for this recruiter.");
@@ -818,7 +589,6 @@ class JobController extends GetxController {
 
       final originalJob = jobsData[jobIndex];
 
-      // Bangun data baru dengan struktur dari `addJob`
       final updatedJob = <String, dynamic>{
         ...originalJob,
         ...updatedFields,
@@ -832,81 +602,92 @@ class JobController extends GetxController {
         },
       };
 
-      // Debugging: Print data untuk memastikan hasil akhir
-      print("🧐 ORIGINAL JOB AT INDEX $jobIndex BEFORE UPDATE:");
-      print(originalJob);
-      print("✏️ FINAL UPDATED JOB DATA TO APPLY:");
-      print(updatedJob);
-
-      // Update data di Firestore
       final Map<String, dynamic> partialUpdate = {
         'jobs.$jobIndex': updatedJob,
       };
       await jobsDocRef.update(partialUpdate);
-      progressValue.value = 0.5;
 
-      print("🔥 PARTIAL FIRESTORE UPDATE SUCCESS!");
+      print("Partial firestore update success");
 
-      Get.back(); // Close loading dialog
       Get.snackbar(
         'Success',
         'Job updated successfully.',
         icon: const Icon(Icons.check_circle, color: Colors.white),
         backgroundColor: Colors.green[700],
         colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 3),
       );
     } catch (e) {
-      Get.back(); // Close loading dialog
-      print("❌ ERROR DURING PARTIAL UPDATE: $e");
+      print("Error during partial update: $e");
       Get.snackbar(
         'Error',
         'Failed to update job: $e',
         icon: const Icon(Icons.error_outline, color: Colors.white),
         backgroundColor: Colors.red[700],
         colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 4),
       );
     } finally {
       isLoading.value = false;
     }
   }
 
-  // removed unused _mergeMaps helper
-
-  // Fungsi menghapus pekerjaan tertentu
   Future<void> deleteJob(int jobIndex) async {
     try {
       isLoading.value = true;
 
       final String? email = auth.currentUser?.email;
       if (email == null) {
-        throw Exception("User not logged in.");
-      }
-      
-      // FR-JOB-002: Validasi data integrity sebelum delete
-      if (!validateJobDataIntegrity(jobIndex)) {
+        Get.snackbar(
+          'Error',
+          'User not logged in.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red[700],
+          colorText: Colors.white,
+          icon: const Icon(Icons.error_outline, color: Colors.white),
+        );
         isLoading.value = false;
-        // Specific error sudah muncul dari validateJobDataIntegrity()
-        return; // Early return - JANGAN throw exception!
+        return;
       }
 
       final jobsDocRef = firestore.collection('Jobs').doc(email);
       final jobsDoc = await jobsDocRef.get();
 
       if (!jobsDoc.exists) {
-        throw Exception("No jobs found for this recruiter.");
+        Get.snackbar(
+          'No Jobs Found',
+          'You don\'t have any jobs posted yet.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange[700],
+          colorText: Colors.white,
+          icon: const Icon(Icons.info_outline, color: Colors.white),
+        );
+        isLoading.value = false;
+        return;
       }
 
       final jobsData = jobsDoc.data()?['jobs'] as List<dynamic>? ?? [];
       final List<Map<String, dynamic>> updatedJobs =
           jobsData.cast<Map<String, dynamic>>();
 
-      if (jobIndex >= updatedJobs.length) {
-        throw Exception("Invalid job index.");
+      if (jobIndex < 0 || jobIndex >= updatedJobs.length) {
+        Get.snackbar(
+          'Invalid Job Index',
+          'Cannot delete job. The job index ($jobIndex) is invalid. You only have ${updatedJobs.length} job(s) posted.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red[700],
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+          icon: const Icon(Icons.error_outline, color: Colors.white),
+        );
+        isLoading.value = false;
+        return;
       }
       
-      // Simpan info job yang akan dihapus untuk konfirmasi
       final deletedJobTitle = updatedJobs[jobIndex]['position'] ?? 'Unknown';
-      print("🗑️ Deleting job: $deletedJobTitle");
+      print("Deleting job: $deletedJobTitle");
 
       updatedJobs.removeAt(jobIndex);
 
@@ -932,13 +713,12 @@ class JobController extends GetxController {
         duration: const Duration(seconds: 4),
         icon: const Icon(Icons.error_outline, color: Colors.white),
       );
-      print("❌ Error in deleteJob: $e");
+      print("Error in deleteJob: $e");
     } finally {
       isLoading.value = false;
     }
   }
 
-  // Fungsi mengambil data recruiter dari Firestore
   Future<void> fetchRecruiterData() async {
     try {
       isLoading.value = true;
@@ -980,17 +760,15 @@ class JobController extends GetxController {
 
       final File file = File(pickedFile.path);
 
-      // Buat nama unik untuk file dan unggah ke WebDAV
       final String uniqueFileName = '${email}_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final webdav = WebDAVService();
       await webdav.uploadFile(file.path, uniqueFileName);
       final String downloadUrl = webdav.buildFileUrl(uniqueFileName);
 
-      print("✅ Image uploaded to WebDAV for $email: $downloadUrl");
+      print("Image uploaded to WebDAV for $email: $downloadUrl");
 
-      // Jika jobIndex diberikan, tambahkan URL ke galleryPaths pekerjaan tersebut
       if (jobIndex != null) {
-        print("🔄 Updating galleryPaths for job at index $jobIndex...");
+        print("Updating galleryPaths for job at index $jobIndex");
 
         final jobsDocRef = firestore.collection('Jobs').doc(email);
         final jobsDoc = await jobsDocRef.get();
@@ -1007,7 +785,6 @@ class JobController extends GetxController {
           throw Exception("Invalid job index.");
         }
 
-    // Ambil galleryPaths lama (dapat berupa URL string atau object list)
     final List<dynamic> currentGalleryPathsDyn = jobs[jobIndex]['jobDetails']
           ['companyDetails']['companyGalleryPaths'] ??
       [];
@@ -1020,39 +797,31 @@ class JobController extends GetxController {
       .cast<String>()
       .toList();
 
-    // Tambahkan URL baru jika belum ada
     final updatedGalleryPaths = [...currentGalleryPaths, downloadUrl];
 
-        // Perbarui jobs dengan galleryPaths terbaru
         jobs[jobIndex]['jobDetails']['companyDetails']['companyGalleryPaths'] =
             updatedGalleryPaths;
 
         await jobsDocRef.update({'jobs': jobs});
 
-        print(
-            "✅ Gallery paths updated successfully for job at index $jobIndex.");
+        print("Gallery paths updated successfully for job at index $jobIndex");
       }
 
-      // Kembalikan URL untuk kasus penggunaan lain
       return downloadUrl;
     } catch (e) {
-      print("❗ Error uploading image: $e");
+      print("Error uploading image: $e");
       return null;
     }
   }
 
-// Fungsi untuk membersihkan file yang tidak terpakai
   Future<void> _cleanUnusedGalleryImages(String email) async {
     try {
 
-      // Ambil semua URL yang digunakan dari Firestore
       final List<String> usedFileNames = await _fetchUsedGalleryFileNames(email);
-      // Hapus file yang tidak digunakan dari WebDAV (filter berdasarkan prefix email_)
 
       final webdav = WebDAVService();
       final allFiles = await webdav.listFiles();
       for (final remoteName in allFiles) {
-        // only consider files uploaded for this email (we use prefix email_)
         if (!remoteName.startsWith('${email}_')) continue;
         if (!usedFileNames.contains(remoteName)) {
          
@@ -1062,9 +831,8 @@ class JobController extends GetxController {
         }
       }
 
-      print("✅ Cleaning completed for email: $email");
     } catch (e) {
-      print("❗ Error during cleaning: $e");
+      print("Error during cleaning: $e");
     }
   }
 
@@ -1096,34 +864,29 @@ class JobController extends GetxController {
       }
 
       if (usedNames.isEmpty) {
-        print("❗ No used WebDAV filenames found for email: $email in Jobs.");
+        print("No used WebDAV filenames found for email: $email in Jobs");
       }
     } catch (e) {
-      print("❗ Error fetching used names: $e");
+      print("Error fetching used names: $e");
     }
 
     return usedNames;
   }
 
-  /// If [url] is a Nextcloud/WebDAV URL under the app folder, return the filename
-  /// as stored on the server (e.g. 'email_12345.jpg'). Otherwise return null.
   String? _extractWebDavFileNameFromUrl(String url) {
     try {
       final marker = '/remote.php/dav/files/';
       final idx = url.indexOf(marker);
       if (idx == -1) return null;
-      // Find the '/HireMe_Id_App/' segment after the marker
       final appMarker = '/HireMe_Id_App/';
       final appIdx = url.indexOf(appMarker, idx);
       if (appIdx == -1) return null;
       final name = url.substring(appIdx + appMarker.length);
-      // decode any percent-encoding
       return Uri.decodeComponent(name);
     } catch (_) {
       return null;
     }
   }
 
-  /// Public wrapper so views can resolve WebDAV filenames from stored URLs.
   String? extractWebDavFileNameFromUrl(String url) => _extractWebDavFileNameFromUrl(url);
 }

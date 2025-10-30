@@ -567,8 +567,8 @@ class AddJobView extends StatelessWidget {
           ),
         ],
       ),
-      child: ElevatedButton(
-        onPressed: () => _handleSave(),
+      child: Obx(() => ElevatedButton(
+        onPressed: jobController.isLoading.value ? null : () => _handleSave(),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF6B34BE),
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -577,15 +577,24 @@ class AddJobView extends StatelessWidget {
           ),
           elevation: 2,
         ),
-        child: const Text(
-          'Save Job',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-      ),
+        child: jobController.isLoading.value 
+          ? const SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            )
+          : const Text(
+              'Save Job',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+      )),
     );
   }
 
@@ -1210,29 +1219,28 @@ class AddJobView extends StatelessWidget {
     return true;
   }
 
-  // Save Function
   void _handleSave() async {
     if (!_validateInputs()) {
       return;
     }
 
-    try {
-      await jobController.addJob(
-        position: positionController.text.trim(),
-        location: locationController.text.trim(),
-        jobType: selectedJobType.value,
-        categories: selectedCategories.toList(),
-        jobDescription: jobDescriptionController.text.trim(),
-        requirements: requirementsList.toList(),
-        facilities:
-            facilitiesController.text.split(',').map((e) => e.trim()).toList(),
-        salary: salaryController.text.trim(),
-        aboutCompany: aboutCompanyController.text.trim(),
-        industry: industryController.text.trim(),
-        website: websiteController.text.trim(),
-        companyGalleryPaths: galleryImageUrls.toList(),
-      );
+    final success = await jobController.addJob(
+      position: positionController.text.trim(),
+      location: locationController.text.trim(),
+      jobType: selectedJobType.value,
+      categories: selectedCategories.toList(),
+      jobDescription: jobDescriptionController.text.trim(),
+      requirements: requirementsList.toList(),
+      facilities:
+          facilitiesController.text.split(',').map((e) => e.trim()).toList(),
+      salary: salaryController.text.trim(),
+      aboutCompany: aboutCompanyController.text.trim(),
+      industry: industryController.text.trim(),
+      website: websiteController.text.trim(),
+      companyGalleryPaths: galleryImageUrls.toList(),
+    );
 
+    if (success) {
       Get.snackbar(
         'Success',
         'Job has been posted successfully!',
@@ -1244,21 +1252,8 @@ class AddJobView extends StatelessWidget {
         borderRadius: 12,
         icon: const Icon(Icons.check_circle, color: Colors.white),
       );
-
-      // Reset all fields
       _resetForm();
-    } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to post job. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.redAccent.withOpacity(0.9),
-        colorText: Colors.white,
-        duration: const Duration(seconds: 3),
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-        icon: const Icon(Icons.error_outline, color: Colors.white),
-      );
+      Get.back();
     }
   }
 

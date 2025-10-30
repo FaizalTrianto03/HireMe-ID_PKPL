@@ -23,9 +23,6 @@ class EditJobView extends StatelessWidget {
   final RxList<String> selectedCategories = <String>[].obs;
   final RxList<String> galleryImageUrls = <String>[].obs;
   final RxList<Map<String, dynamic>> requirementsList = <Map<String, dynamic>>[].obs;
-  
-  // Add this reactive variable for loading state
-  final RxBool isSubmitting = false.obs;
 
   // Job index dari Get.arguments
   late final int jobIndex;
@@ -990,39 +987,23 @@ class EditJobView extends StatelessWidget {
         ],
       ),
       child: Obx(() => ElevatedButton(
-            onPressed: isSubmitting.value ? null : () => _handleUpdate(),
+            onPressed: jobController.isLoading.value ? null : () => _handleUpdate(),
             style: ElevatedButton.styleFrom(
-              backgroundColor: isSubmitting.value 
-                  ? Colors.grey[400] 
-                  : const Color(0xFF6B34BE),
+              backgroundColor: const Color(0xFF6B34BE),
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               elevation: 2,
             ),
-            child: isSubmitting.value
-                ? Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Text(
-                        'Updating Job...',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
+            child: jobController.isLoading.value
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
                   )
                 : const Text(
                     'Update Job',
@@ -1070,7 +1051,7 @@ class EditJobView extends StatelessWidget {
                     child: Text(item),
                   ))
               .toList(),
-          onChanged: isSubmitting.value ? null : (value) {
+          onChanged: jobController.isLoading.value ? null : (value) {
             selectedItem.value = value!;
           },
           icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF6B34BE)),
@@ -1097,7 +1078,7 @@ class EditJobView extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Obx(() => GestureDetector(
-          onTap: isSubmitting.value ? null : () {
+          onTap: jobController.isLoading.value ? null : () {
             Get.dialog(
               AlertDialog(
                 title: Text('Choose $label'),
@@ -1132,7 +1113,7 @@ class EditJobView extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isSubmitting.value ? Colors.grey[100] : Colors.white,
+                color: jobController.isLoading.value ? Colors.grey[100] : Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey[300]!),
               ),
@@ -1141,7 +1122,7 @@ class EditJobView extends StatelessWidget {
                   return Text(
                     'Choose $label',
                     style: TextStyle(
-                      color: isSubmitting.value ? Colors.grey[500] : Colors.grey[600], 
+                      color: jobController.isLoading.value ? Colors.grey[500] : Colors.grey[600], 
                       fontSize: 16
                     ),
                   );
@@ -1149,7 +1130,7 @@ class EditJobView extends StatelessWidget {
                   return Text(
                     selectedItems.join(', '),
                     style: TextStyle(
-                      color: isSubmitting.value ? Colors.grey[600] : Colors.black87, 
+                      color: jobController.isLoading.value ? Colors.grey[600] : Colors.black87, 
                       fontSize: 16
                     ),
                   );
@@ -1162,37 +1143,32 @@ class EditJobView extends StatelessWidget {
     );
   }
 
-  // Update Function - UPDATED WITH PROGRESS HANDLING
   void _handleUpdate() async {
     if (!_validateInputs()) {
       return;
     }
 
-    // Set loading state
-    isSubmitting.value = true;
+    final updatedFields = {
+      'position': positionController.text.trim(),
+      'location': locationController.text.trim(),
+      'jobType': selectedJobType.value,
+      'categories': selectedCategories.toList(),
+      'salary': salaryController.text.trim(),
+      'jobDetails.jobDescription': jobDescriptionController.text.trim(),
+      'jobDetails.requirements': requirementsList.toList(),
+      'jobDetails.facilities': facilitiesController.text
+          .split(',')
+          .map((e) => e.trim())
+          .toList(),
+      'jobDetails.companyDetails.aboutCompany': aboutCompanyController.text.trim(),
+      'jobDetails.companyDetails.industry': industryController.text.trim(),
+      'jobDetails.companyDetails.website': websiteController.text.trim(),
+      'jobDetails.companyDetails.companyGalleryPaths': galleryImageUrls.toList(),
+    };
 
-    try {
-      final updatedFields = {
-        'position': positionController.text.trim(),
-        'location': locationController.text.trim(),
-        'jobType': selectedJobType.value,
-        'categories': selectedCategories.toList(),
-        'salary': salaryController.text.trim(),
-        'jobDetails.jobDescription': jobDescriptionController.text.trim(),
-        'jobDetails.requirements': requirementsList.toList(),
-        'jobDetails.facilities': facilitiesController.text
-            .split(',')
-            .map((e) => e.trim())
-            .toList(),
-        'jobDetails.companyDetails.aboutCompany': aboutCompanyController.text.trim(),
-        'jobDetails.companyDetails.industry': industryController.text.trim(),
-        'jobDetails.companyDetails.website': websiteController.text.trim(),
-        'jobDetails.companyDetails.companyGalleryPaths': galleryImageUrls.toList(),
-      };
+    final success = await jobController.updateJob(jobIndex, updatedFields);
 
-      await jobController.updateJob(jobIndex, updatedFields);
-
-      // Show success message
+    if (success) {
       Get.snackbar(
         'Success',
         'Job updated successfully!',
@@ -1204,25 +1180,7 @@ class EditJobView extends StatelessWidget {
         borderRadius: 12,
         icon: const Icon(Icons.check_circle, color: Colors.white),
       );
-
-      // Navigate back
       Get.back();
-    } catch (e) {
-      // Show error message
-      Get.snackbar(
-        'Error',
-        'Failed to update job. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.redAccent.withOpacity(0.9),
-        colorText: Colors.white,
-        duration: const Duration(seconds: 3),
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-        icon: const Icon(Icons.error_outline, color: Colors.white),
-      );
-    } finally {
-      // Reset loading state
-      isSubmitting.value = false;
     }
   }
 
