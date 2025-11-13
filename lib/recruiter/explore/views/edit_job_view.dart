@@ -67,6 +67,12 @@ class EditJobView extends StatelessWidget {
     selectedJobType.value = jobData['jobType'] ?? '';
     selectedCategories.value = List<String>.from(jobData['categories'] ?? <String>[]);
     galleryImageUrls.value = List<String>.from(jobData['jobDetails']['companyDetails']['companyGalleryPaths'] ?? []);
+    if (jobData['startDate'] != null) {
+      jobController.startDate.value = DateTime.tryParse(jobData['startDate'].toString());
+    }
+    if (jobData['endDate'] != null) {
+      jobController.endDate.value = DateTime.tryParse(jobData['endDate'].toString());
+    }
   }
 
   @override
@@ -249,6 +255,71 @@ class EditJobView extends StatelessWidget {
       ),
       style: const TextStyle(color: Colors.black87, fontSize: 16),
     );
+  }
+
+  String _formatDate(DateTime d) {
+    final m = d.month.toString().padLeft(2, '0');
+    final day = d.day.toString().padLeft(2, '0');
+    return '${d.year}-$m-$day';
+  }
+
+  Widget _buildDatePickerBox(BuildContext context, String label, bool isStart) {
+    return Obx(() {
+      final date = isStart ? jobController.startDate.value : jobController.endDate.value;
+      return InkWell(
+        onTap: jobController.isLoading.value
+            ? null
+            : () async {
+                final now = DateTime.now();
+                final firstDate = isStart
+                    ? DateTime(now.year, now.month, now.day)
+                    : (jobController.startDate.value != null
+                        ? DateTime(jobController.startDate.value!.year, jobController.startDate.value!.month, jobController.startDate.value!.day)
+                        : DateTime(now.year, now.month, now.day));
+                final initialDate = date ?? firstDate;
+                final lastDate = DateTime(now.year + 2, now.month, now.day);
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: initialDate,
+                  firstDate: firstDate,
+                  lastDate: lastDate,
+                );
+                if (picked != null) {
+                  if (isStart) {
+                    jobController.startDate.value = picked;
+                    if (jobController.endDate.value != null && jobController.endDate.value!.isBefore(picked)) {
+                      jobController.endDate.value = null;
+                    }
+                  } else {
+                    jobController.endDate.value = picked;
+                  }
+                }
+              },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.date_range, color: const Color(0xFF6B34BE)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  date == null ? 'Select $label' : '$label: ${_formatDate(date)}',
+                  style: TextStyle(
+                    color: date == null ? Colors.grey[600] : Colors.black87,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
   }
 
   // Company Tab
@@ -584,6 +655,14 @@ class EditJobView extends StatelessWidget {
                   hintText: 'e.g., Jakarta, Indonesia',
                   controller: locationController,
                   icon: Icons.location_on,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(child: _buildDatePickerBox(Get.context!, 'Start Date', true)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildDatePickerBox(Get.context!, 'End Date', false)),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 _buildInputField(
@@ -1164,6 +1243,8 @@ class EditJobView extends StatelessWidget {
       'jobDetails.companyDetails.industry': industryController.text.trim(),
       'jobDetails.companyDetails.website': websiteController.text.trim(),
       'jobDetails.companyDetails.companyGalleryPaths': galleryImageUrls.toList(),
+      'startDate': jobController.startDate.value?.toIso8601String(),
+      'endDate': jobController.endDate.value?.toIso8601String(),
     };
 
     final success = await jobController.updateJob(jobIndex, updatedFields);
@@ -1198,6 +1279,8 @@ class EditJobView extends StatelessWidget {
     checkField('Job Position', positionController.text);
     checkField('Location', locationController.text);
     checkField('Salary', salaryController.text);
+  if (jobController.startDate.value == null) emptyFields.add('Start Date');
+  if (jobController.endDate.value == null) emptyFields.add('End Date');
 
     // Dropdowns
     if (selectedJobType.value.isEmpty) emptyFields.add('Job Type');

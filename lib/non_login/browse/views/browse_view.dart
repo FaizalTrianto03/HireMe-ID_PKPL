@@ -103,6 +103,52 @@ class _BrowseViewState extends State<BrowseView> {
     });
   }
 
+  Widget _buildStatusRow(Job job) {
+    DateTime? startDate = job.startDate;
+    DateTime? endDate = job.endDate;
+    final now = DateTime.now();
+    String statusLabel = job.jobType;
+    Color statusColor = const Color(0xFF6B34BE);
+    if (startDate != null && endDate != null) {
+      final today = DateTime(now.year, now.month, now.day);
+      final s = DateTime(startDate.year, startDate.month, startDate.day);
+      final e = DateTime(endDate.year, endDate.month, endDate.day);
+      if (today.isBefore(s)) {
+        statusLabel = 'Upcoming • ${_fmt(s)}';
+        statusColor = Colors.amber[700]!;
+      } else if (today.isAfter(e)) {
+        statusLabel = 'Closed';
+        statusColor = Colors.red[600]!;
+      } else {
+        statusLabel = 'Open • until ${_fmt(e)}';
+        statusColor = Colors.green[700]!;
+      }
+    }
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: statusColor.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            statusLabel,
+            style: TextStyle(
+              color: statusColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _fmt(DateTime d) {
+    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -308,13 +354,7 @@ class _BrowseViewState extends State<BrowseView> {
                                                     ),
                                                   ),
                                                   const SizedBox(height: 4),
-                                                  Text(
-                                                    job.jobType,
-                                                    style: const TextStyle(
-                                                      color: Color(0xFF6B34BE),
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
+                                                  _buildStatusRow(job),
                                                 ],
                                               ),
                                             ),
@@ -480,13 +520,7 @@ class _BrowseViewState extends State<BrowseView> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  job.jobType,
-                                  style: const TextStyle(
-                                    color: Color(0xFF6B34BE),
-                                    fontSize: 12,
-                                  ),
-                                ),
+                                _buildStatusRow(job),
                               ],
                             ),
                           ),

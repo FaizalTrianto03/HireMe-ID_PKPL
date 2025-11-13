@@ -219,6 +219,71 @@ class AddJobView extends StatelessWidget {
     );
   }
 
+  String _formatDate(DateTime d) {
+    final m = d.month.toString().padLeft(2, '0');
+    final day = d.day.toString().padLeft(2, '0');
+    return '${d.year}-$m-$day';
+  }
+
+  Widget _buildDatePickerBox(BuildContext context, String label, bool isStart) {
+    return Obx(() {
+      final date = isStart ? jobController.startDate.value : jobController.endDate.value;
+      return InkWell(
+        onTap: jobController.isLoading.value
+            ? null
+            : () async {
+                final now = DateTime.now();
+                final firstDate = isStart
+                    ? DateTime(now.year, now.month, now.day)
+                    : (jobController.startDate.value != null
+                        ? DateTime(jobController.startDate.value!.year, jobController.startDate.value!.month, jobController.startDate.value!.day)
+                        : DateTime(now.year, now.month, now.day));
+                final initialDate = date ?? firstDate;
+                final lastDate = DateTime(now.year + 2, now.month, now.day);
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: initialDate,
+                  firstDate: firstDate,
+                  lastDate: lastDate,
+                );
+                if (picked != null) {
+                  if (isStart) {
+                    jobController.startDate.value = picked;
+                    if (jobController.endDate.value != null && jobController.endDate.value!.isBefore(picked)) {
+                      jobController.endDate.value = null;
+                    }
+                  } else {
+                    jobController.endDate.value = picked;
+                  }
+                }
+              },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.date_range, color: const Color(0xFF6B34BE)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  date == null ? 'Select $label' : '$label: ${_formatDate(date)}',
+                  style: TextStyle(
+                    color: date == null ? Colors.grey[600] : Colors.black87,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
   // Company Tab
   Widget _buildCompanyTab() {
     final recruiterData = jobController.recruiterData;
@@ -765,6 +830,14 @@ class AddJobView extends StatelessWidget {
                   icon: Icons.location_on,
                 ),
                 const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(child: _buildDatePickerBox(Get.context!, 'Start Date', true)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildDatePickerBox(Get.context!, 'End Date', false)),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 _buildInputField(
                   label: 'Salary Range',
                   hintText: 'e.g., IDR 15,000,000 - 25,000,000',
@@ -1177,6 +1250,8 @@ class AddJobView extends StatelessWidget {
     checkField('Job Position', positionController.text);
     checkField('Location', locationController.text);
     checkField('Salary', salaryController.text);
+  if (jobController.startDate.value == null) emptyFields.add('Start Date');
+  if (jobController.endDate.value == null) emptyFields.add('End Date');
 
     // Dropdowns
     if (selectedJobType.value.isEmpty) emptyFields.add('Job Type');
@@ -1238,6 +1313,8 @@ class AddJobView extends StatelessWidget {
       industry: industryController.text.trim(),
       website: websiteController.text.trim(),
       companyGalleryPaths: galleryImageUrls.toList(),
+      startDate: jobController.startDate.value!,
+      endDate: jobController.endDate.value!,
     );
 
     if (success) {
@@ -1273,5 +1350,7 @@ class AddJobView extends StatelessWidget {
     galleryImageUrls.clear();
     requirementsList.clear();
     showProfileNotice.value = true; // Reset profile notice
+    jobController.startDate.value = null;
+    jobController.endDate.value = null;
   }
 }

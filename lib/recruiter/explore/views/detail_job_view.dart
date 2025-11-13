@@ -69,6 +69,8 @@ class _DetailJobViewState extends State<DetailJobView> {
     }).where((s) => s.isNotEmpty).toList();
     final String website = companyDetails['website'] ?? 'No Website';
     final String industry = companyDetails['industry'] ?? 'Unknown Industry';
+  DateTime? startDate = job['startDate'] != null ? DateTime.tryParse(job['startDate'].toString()) : null;
+  DateTime? endDate = job['endDate'] != null ? DateTime.tryParse(job['endDate'].toString()) : null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
@@ -221,6 +223,24 @@ class _DetailJobViewState extends State<DetailJobView> {
                                 ),
                               ),
                             ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                const Icon(Icons.play_circle_outline, size: 16, color: Colors.grey),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Start: ' + (startDate != null ? _fmtDate(startDate) : '-'),
+                                  style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                ),
+                                const SizedBox(width: 12),
+                                const Icon(Icons.stop_circle_outlined, size: 16, color: Colors.grey),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'End: ' + (endDate != null ? _fmtDate(endDate) : '-'),
+                                  style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -270,6 +290,8 @@ class _DetailJobViewState extends State<DetailJobView> {
                       );
                     }).toList(),
                   ),
+                  const SizedBox(height: 14),
+                  _buildDatesStatus(startDate, endDate, jobType),
                 ],
               ),
             ),
@@ -599,6 +621,151 @@ class _DetailJobViewState extends State<DetailJobView> {
       ],
     );
   }
+
+  Widget _buildDatesStatus(DateTime? startDate, DateTime? endDate, String fallbackType) {
+    if (startDate == null || endDate == null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [Colors.grey.shade200, Colors.grey.shade100],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          children: const [
+            Icon(Icons.info_outline, size: 18, color: Colors.grey),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'No scheduling info defined for this job.',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final s = DateTime(startDate.year, startDate.month, startDate.day);
+    final e = DateTime(endDate.year, endDate.month, endDate.day);
+    final totalDays = e.difference(s).inDays.clamp(0, 1 << 30);
+    final elapsedDays = today.isBefore(s)
+        ? 0
+        : today.isAfter(e)
+            ? totalDays
+            : today.difference(s).inDays.clamp(0, totalDays);
+    final progress = totalDays == 0 ? 1.0 : (elapsedDays / totalDays).clamp(0.0, 1.0);
+
+    String statusLabel;
+    Color statusColor;
+    if (today.isBefore(s)) {
+      statusLabel = 'Upcoming';
+      statusColor = Colors.amber[700]!;
+    } else if (today.isAfter(e)) {
+      statusLabel = 'Closed';
+      statusColor = Colors.red[600]!;
+    } else {
+      statusLabel = 'Open';
+      statusColor = Colors.green[700]!;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [statusColor.withOpacity(0.15), Colors.white],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: statusColor.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '${_fmtDate(s)}  •  ${_fmtDate(e)}',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Stack(
+            children: [
+              Container(
+                height: 8,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  return Container(
+                    height: 8,
+                    width: constraints.maxWidth * progress,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [statusColor, statusColor.withOpacity(0.5)],
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                today.isBefore(s)
+                    ? 'Starts in ${s.difference(today).inDays}d'
+                    : today.isAfter(e)
+                        ? 'Ended ${today.difference(e).inDays}d ago'
+                        : 'Day ${elapsedDays + 1} of ${totalDays + 1}',
+                style: TextStyle(fontSize: 11, color: statusColor),
+              ),
+              Text(
+                '${(progress * 100).toStringAsFixed(0)}%',
+                style: TextStyle(fontSize: 11, color: statusColor, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _fmtDate(DateTime d) => '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
   void _launchURL(String url) async {
     if (await canLaunch(url)) {

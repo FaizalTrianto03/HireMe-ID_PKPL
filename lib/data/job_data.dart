@@ -13,6 +13,8 @@ class Job {
   final List<String> categories; // Kategori, misalnya Marketing, Design
   final JobDetails jobDetails; // Detail pekerjaan dan perusahaan
   final String salary; // Gaji untuk pekerjaan ini
+  final DateTime? startDate; // Tanggal mulai posting (opsional)
+  final DateTime? endDate; // Tanggal berakhir posting (opsional)
   bool isApplied; // Apakah pekerjaan sudah dilamar
   String applyStatus; // Status aplikasi (accepted, inProcess, cancelled)
   bool isRecommended; // Apakah pekerjaan ini direkomendasikan
@@ -28,6 +30,8 @@ class Job {
     required this.categories,
     required this.jobDetails,
     required this.salary, // Menambahkan parameter salary
+    this.startDate,
+    this.endDate,
     this.isApplied = false, // Default: pekerjaan belum dilamar
     this.applyStatus = 'inProcess', // Default: aplikasi dalam proses
     this.isRecommended = false, // Default: tidak direkomendasikan
@@ -147,6 +151,8 @@ Future<void> fetchJobData() async {
                 ),
               ),
               salary: jobData['salary'] ?? '',
+              startDate: jobData['startDate'] != null ? DateTime.tryParse(jobData['startDate']) : null,
+              endDate: jobData['endDate'] != null ? DateTime.tryParse(jobData['endDate']) : null,
               isApplied: jobData['isApplied'] ?? false,
               applyStatus: jobData['applyStatus'] ?? 'inProcess',
               isRecommended: jobData['isRecommended'] ?? false,

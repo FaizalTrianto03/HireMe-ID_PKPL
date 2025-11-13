@@ -18,6 +18,8 @@ class JobController extends GetxController {
   var isLoading = false.obs;
   final RxList<String> galleryImageUrls = <String>[].obs;
   late final Directory tempDir;
+  final Rxn<DateTime> startDate = Rxn<DateTime>();
+  final Rxn<DateTime> endDate = Rxn<DateTime>();
   
   // FR-JOB-001: validasi field required dan format data
   // FR-JOB-002: pencegahan data duplikat dan integritas data
@@ -51,6 +53,8 @@ class JobController extends GetxController {
     required String website,
     required List<String> facilities,
     required List<String> companyGalleryPaths,
+    required DateTime? startDate,
+    required DateTime? endDate,
   }) {
     // Validasi 1: Job Position
     if (position.trim().isEmpty) {
@@ -145,8 +149,34 @@ class JobController extends GetxController {
       _showValidationError("Please provide a valid salary range (e.g., IDR 5,000,000 - 10,000,000)");
       return false;
     }
+    // Validasi 9: Start & End Date
+    if (startDate == null) {
+      _showValidationError("Start date is required");
+      return false;
+    }
+    if (endDate == null) {
+      _showValidationError("End date is required");
+      return false;
+    }
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final sDate = DateTime(startDate.year, startDate.month, startDate.day);
+    final eDate = DateTime(endDate.year, endDate.month, endDate.day);
+    if (sDate.isBefore(today)) {
+      _showValidationError("Start date cannot be before today");
+      return false;
+    }
+    if (eDate.isBefore(sDate)) {
+      _showValidationError("End date cannot be before start date");
+      return false;
+    }
+    const maxDurationDays = 90;
+    if (eDate.isAfter(sDate.add(const Duration(days: maxDurationDays)))) {
+      _showValidationError("Job duration cannot exceed 90 days");
+      return false;
+    }
     
-    // Validasi 9: About Company
+    // Validasi 10: About Company
     if (aboutCompany.trim().isEmpty) {
       _showValidationError("Company description is required");
       return false;
@@ -160,13 +190,13 @@ class JobController extends GetxController {
       return false;
     }
     
-    // Validasi 10: Industry
+    // Validasi 11: Industry
     if (industry.trim().isEmpty) {
       _showValidationError("Industry is required");
       return false;
     }
     
-    // Validasi 11: Website
+    // Validasi 12: Website
     if (website.trim().isEmpty) {
       _showValidationError("Company website is required");
       return false;
@@ -180,7 +210,7 @@ class JobController extends GetxController {
       return false;
     }
     
-    // Validasi 12: Company Gallery
+    // Validasi 13: Company Gallery
     if (companyGalleryPaths.isEmpty) {
       _showValidationError("At least one company gallery image is required");
       return false;
@@ -259,6 +289,8 @@ class JobController extends GetxController {
     required String industry,
     required String website,
     required List<String> companyGalleryPaths,
+    required DateTime startDate,
+    required DateTime endDate,
   }) async {
     isLoading.value = true;
 
@@ -295,6 +327,8 @@ class JobController extends GetxController {
         website: website,
         facilities: facilities,
         companyGalleryPaths: companyGalleryPaths,
+        startDate: startDate,
+        endDate: endDate,
       );
       
       if (!isValidFields) {
@@ -327,6 +361,8 @@ class JobController extends GetxController {
         'companyLogoPath': companyLogoPath,
         'jobType': jobType,
         'categories': categories,
+        'startDate': startDate.toIso8601String(),
+        'endDate': endDate.toIso8601String(),
         'jobDetails': {
           'jobDescription': jobDescription,
           'requirements': requirements,
@@ -456,6 +492,8 @@ class JobController extends GetxController {
       String industry = companyDetails['industry'] ?? '';
       String website = companyDetails['website'] ?? '';
       List<String> companyGalleryPaths = List<String>.from(companyDetails['companyGalleryPaths'] ?? []);
+  DateTime? sDate = jobData['startDate'] != null ? DateTime.tryParse(jobData['startDate'].toString()) : null;
+  DateTime? eDate = jobData['endDate'] != null ? DateTime.tryParse(jobData['endDate'].toString()) : null;
       
       // Step 6: Apply updated fields ke variabel lokal
       if (updatedFields.containsKey('position')) {
@@ -494,6 +532,22 @@ class JobController extends GetxController {
       if (updatedFields.containsKey('jobDetails.companyDetails.companyGalleryPaths')) {
         companyGalleryPaths = List<String>.from(updatedFields['jobDetails.companyDetails.companyGalleryPaths']);
       }
+      if (updatedFields.containsKey('startDate')) {
+        final v = updatedFields['startDate'];
+        if (v is DateTime) {
+          sDate = v;
+        } else if (v is String) {
+          sDate = DateTime.tryParse(v);
+        }
+      }
+      if (updatedFields.containsKey('endDate')) {
+        final v = updatedFields['endDate'];
+        if (v is DateTime) {
+          eDate = v;
+        } else if (v is String) {
+          eDate = DateTime.tryParse(v);
+        }
+      }
       
       // Step 7: Validasi semua field (sequential)
       final isValidFields = validateJobRequiredFields(
@@ -509,6 +563,8 @@ class JobController extends GetxController {
         website: website,
         facilities: facilities,
         companyGalleryPaths: companyGalleryPaths,
+        startDate: sDate,
+        endDate: eDate,
       );
       
       if (!isValidFields) {
@@ -537,6 +593,12 @@ class JobController extends GetxController {
           jobData[key] = value;
         }
       });
+      if (sDate != null) {
+        jobData['startDate'] = sDate.toIso8601String();
+      }
+      if (eDate != null) {
+        jobData['endDate'] = eDate.toIso8601String();
+      }
 
       // Step 10: Update ke Firestore
       allJobs[jobIndex] = jobData;
