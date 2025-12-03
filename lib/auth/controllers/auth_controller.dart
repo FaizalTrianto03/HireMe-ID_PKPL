@@ -10,9 +10,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../widgets/navbar_login.dart';
 
 class AuthController extends GetxController {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  // Dependency injection untuk test agar tidak memanggil platform channel
+  final FirebaseAuth _auth;
+  final GoogleSignIn _googleSignIn;
+  final FirebaseFirestore _firestore;
+  final bool skipAutoLoad; // true pada unit test agar tidak memanggil SharedPreferences
+
+  AuthController({
+    FirebaseAuth? firebaseAuth,
+    GoogleSignIn? googleSignIn,
+    FirebaseFirestore? firestore,
+    this.skipAutoLoad = false,
+  })  : _auth = firebaseAuth ?? FirebaseAuth.instance,
+        _googleSignIn = googleSignIn ?? GoogleSignIn(),
+        _firestore = firestore ?? FirebaseFirestore.instance;
 
   // Remember Me state
   var isRememberMe = true.obs;
@@ -22,7 +33,9 @@ class AuthController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    loadRememberedCredentials();
+    if (!skipAutoLoad) {
+      loadRememberedCredentials();
+    }
   }
 
   // Load email dan password yang disimpan
@@ -60,9 +73,11 @@ class AuthController extends GetxController {
   /// Validasi format email (FR-LOGIN-001)
   /// Test Positif: Email valid (user@example.com) -> return true
   /// Test Negatif: Email invalid (userexample.com, @example.com, user@) -> return false & show error
-  bool validateEmailFormat(String email) {
+  bool validateEmailFormat(String email, {bool showErrors = true}) {
     if (email.trim().isEmpty) {
-      _showErrorSnackbar("Validation Error", "Email cannot be empty");
+      if (showErrors) {
+        _showErrorSnackbar("Validation Error", "Email cannot be empty");
+      }
       return false;
     }
     
@@ -72,7 +87,9 @@ class AuthController extends GetxController {
     );
     
     if (!emailRegex.hasMatch(email.trim())) {
-      _showErrorSnackbar("Validation Error", "Invalid email format. Please use format: user@example.com");
+      if (showErrors) {
+        _showErrorSnackbar("Validation Error", "Invalid email format. Please use format: user@example.com");
+      }
       return false;
     }
     
@@ -82,16 +99,20 @@ class AuthController extends GetxController {
   /// Validasi kekuatan password untuk login (FR-LOGIN-001)
   /// Test Positif: Password minimal 6 karakter -> return true
   /// Test Negatif: Password < 6 karakter -> return false & show error
-  bool validatePasswordStrength(String password, {bool isRegistration = false}) {
+  bool validatePasswordStrength(String password, {bool isRegistration = false, bool showErrors = true}) {
     if (password.isEmpty) {
-      _showErrorSnackbar("Validation Error", "Password cannot be empty");
+      if (showErrors) {
+        _showErrorSnackbar("Validation Error", "Password cannot be empty");
+      }
       return false;
     }
     
     if (isRegistration) {
       // Untuk registration, password harus lebih kuat
       if (password.length < 8) {
-        _showErrorSnackbar("Validation Error", "Password must be at least 8 characters long");
+        if (showErrors) {
+          _showErrorSnackbar("Validation Error", "Password must be at least 8 characters long");
+        }
         return false;
       }
       
@@ -100,14 +121,18 @@ class AuthController extends GetxController {
       final hasNumber = RegExp(r'[0-9]').hasMatch(password);
       
       if (!hasLetter || !hasNumber) {
-        _showErrorSnackbar("Validation Error", 
-          "Password must contain both letters and numbers for security");
+        if (showErrors) {
+          _showErrorSnackbar("Validation Error", 
+            "Password must contain both letters and numbers for security");
+        }
         return false;
       }
     } else {
       // Untuk login, minimal 6 karakter (Firebase default)
       if (password.length < 6) {
-        _showErrorSnackbar("Validation Error", "Password must be at least 6 characters long");
+        if (showErrors) {
+          _showErrorSnackbar("Validation Error", "Password must be at least 6 characters long");
+        }
         return false;
       }
     }
@@ -214,7 +239,7 @@ class AuthController extends GetxController {
           errorMessage = "Login failed. Please try again";
       }
       _showErrorSnackbar("Login Failed", errorMessage);
-    } on FirebaseException catch (e) {
+    } on FirebaseException {
       _showErrorSnackbar("Database Error", "Failed to access user data. Please try again");
     } catch (e) {
       _showErrorSnackbar("Login Error", "An unexpected error occurred. Please try again");
@@ -259,15 +284,19 @@ class AuthController extends GetxController {
   /// Validasi role selection (FR-REGISTER-002)
   /// Test Positif: Role adalah 'jobseeker' atau 'recruiter' -> return true
   /// Test Negatif: Role kosong atau invalid -> return false & show error
-  bool validateRoleSelection(String role) {
+  bool validateRoleSelection(String role, {bool showErrors = true}) {
     if (role.isEmpty) {
-      _showErrorSnackbar("Validation Error", "Please select your account type (Job Seeker or Recruiter)");
+      if (showErrors) {
+        _showErrorSnackbar("Validation Error", "Please select your account type (Job Seeker or Recruiter)");
+      }
       return false;
     }
     
     final allowedRoles = ['jobseeker', 'recruiter'];
     if (!allowedRoles.contains(role.toLowerCase())) {
-      _showErrorSnackbar("Validation Error", "Invalid account type selected. Please choose Job Seeker or Recruiter.");
+      if (showErrors) {
+        _showErrorSnackbar("Validation Error", "Invalid account type selected. Please choose Job Seeker or Recruiter.");
+      }
       return false;
     }
     
@@ -335,7 +364,7 @@ class AuthController extends GetxController {
           errorMessage = "Registration failed. Please try again";
       }
       _showErrorSnackbar("Registration Failed", errorMessage);
-    } on FirebaseException catch (e) {
+    } on FirebaseException {
       _showErrorSnackbar("Database Error", "Failed to save account data. Please try again");
     } catch (e) {
       _showErrorSnackbar("Registration Error", "An unexpected error occurred. Please try again");
@@ -405,7 +434,7 @@ class AuthController extends GetxController {
           errorMessage = "Registration failed. Please try again";
       }
       _showErrorSnackbar("Registration Failed", errorMessage);
-    } on FirebaseException catch (e) {
+    } on FirebaseException {
       _showErrorSnackbar("Database Error", "Failed to save recruiter data. Please try again");
     } catch (e) {
       _showErrorSnackbar("Registration Error", "An unexpected error occurred. Please try again");
@@ -507,7 +536,7 @@ class AuthController extends GetxController {
           errorMessage = "Google Sign-In failed. Please try again";
       }
       _showErrorSnackbar("Google Sign-In Failed", errorMessage);
-    } on FirebaseException catch (e) {
+    } on FirebaseException {
       _showErrorSnackbar("Database Error", "Failed to save account data. Please try again");
     } catch (e) {
       _showErrorSnackbar("Google Sign-In Error", "An unexpected error occurred. Please try again");
@@ -580,7 +609,7 @@ class AuthController extends GetxController {
           errorMessage = "Google Sign-In failed. Please try again";
       }
       _showErrorSnackbar("Google Sign-In Failed", errorMessage);
-    } on FirebaseException catch (e) {
+    } on FirebaseException {
       _showErrorSnackbar("Database Error", "Failed to save recruiter data. Please try again");
     } catch (e) {
       _showErrorSnackbar("Google Sign-In Error", "An unexpected error occurred. Please try again");
@@ -594,7 +623,7 @@ class AuthController extends GetxController {
       await _googleSignIn.signOut();
       await _clearCredentials();
       Get.offAll(() => NavbarNonLogin());
-    } on FirebaseAuthException catch (e) {
+    } on FirebaseAuthException {
       _showErrorSnackbar("Logout Error", "Failed to sign out from Firebase");
     } catch (e) {
       // Even if logout fails, still navigate to login screen for security
@@ -656,27 +685,4 @@ Future<void> _saveLoginStatus() async {
   }
 }
 
-Future<void> _clearLoginStatus() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('isLoggedIn');
-  } catch (e) {
-    print("Failed to clear login status: $e");
-  }
-}
-
-void _showErrorSnackbar(String title, String message) {
-  try {
-    Get.snackbar(
-      title,
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.redAccent,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 3),
-      margin: const EdgeInsets.all(16),
-    );
-  } catch (e) {
-    print("Error showing snackbar: $title - $message");
-  }
-}
+// _clearLoginStatus dan _showErrorSnackbar global tidak digunakan lagi setelah refactor dependency injection

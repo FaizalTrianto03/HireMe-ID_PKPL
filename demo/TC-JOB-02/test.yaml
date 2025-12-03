@@ -1,0 +1,67 @@
+appId: com.example.HireMe_Id
+---
+# TC-JOB-02: Field wajib kosong menyebabkan penyimpanan gagal
+# Precondition: Login sebagai recruiter
+# Expected: Snackbar merah dengan field yang bermasalah
+
+# Buka aplikasi
+- launchApp
+
+# Tunggu aplikasi siap
+- waitForAnimationToEnd
+
+# Login sebagai recruiter
+- tapOn:
+    point: "90%,95%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Isi kredensial recruiter
+- tapOn:
+    point: "50%,30%"
+- inputText: "testrecruiter@gmail.com"
+- tapOn:
+    point: "50%,38%"
+- inputText: "recruiter123"
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Navigasi ke halaman Add Job
+- tapOn: "Add Job"
+- waitForAnimationToEnd
+
+# Isi beberapa field tapi KOSONGKAN Job Description
+# Job Position
+- tapOn: "Job Position"
+- inputText: "Mobile Developer"
+
+# Location
+- tapOn: "Location"
+- inputText: "Jakarta"
+
+# Job Type
+- tapOn: "Job Type"
+- tapOn: "Full-time"
+
+# SKIP Job Description (field wajib)
+# Langsung ke Requirements
+
+# Requirements
+- tapOn: "Requirements"
+- inputText: "Flutter experience"
+
+# Salary
+- tapOn: "Salary"
+- inputText: "IDR 5,000,000"
+
+# Klik tombol Save Job tanpa isi Job Description
+- tapOn: "Save Job"
+
+# Tunggu response
+- waitForAnimationToEnd
+
+# Verifikasi snackbar merah muncul
+# Expected: Pesan error menunjukkan field Job Description kosong
+# "Job description is required" atau pesan serupa

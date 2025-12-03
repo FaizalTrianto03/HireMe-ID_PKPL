@@ -1,0 +1,36 @@
+appId: com.example.HireMe_Id
+---
+# TC-REGISTER-04: Role tidak valid (dimanipulasi)
+# Requirement: FR-REGISTER-002
+# Expected: Sistem menolak dengan pesan "Role tidak valid"
+
+# NOTE: Test ini dilakukan lewat backend dengan role tidak dikenal
+# Dalam konteks UI testing, kita login sebagai recruiter dulu
+
+# Buka aplikasi
+- launchApp
+
+# Tunggu aplikasi siap
+- waitForAnimationToEnd
+
+# Login sebagai recruiter
+- tapOn:
+    point: "90%,95%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Isi kredensial recruiter
+- tapOn:
+    point: "50%,30%"
+- inputText: "testrecruiter@gmail.com"
+- tapOn:
+    point: "50%,38%"
+- inputText: "recruiter123"
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Expected Result: 
+# Sistem menolak registrasi dengan role tidak valid
+# Pesan error "Role tidak valid" muncul

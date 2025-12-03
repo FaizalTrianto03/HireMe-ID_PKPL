@@ -1,0 +1,105 @@
+appId: com.example.HireMe_Id
+---
+# TC-JOB-01: Semua field valid dan data berhasil disimpan
+# Precondition: Login sebagai recruiter dan di halaman Add Job
+# Expected: Snackbar hijau "Job has been posted successfully!"
+
+# Buka aplikasi
+- launchApp
+
+# Tunggu aplikasi siap
+- waitForAnimationToEnd
+
+# Login sebagai recruiter
+- tapOn:
+    point: "90%,95%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Isi kredensial recruiter
+- tapOn:
+    point: "50%,30%"
+- inputText: "testrecruiter@gmail.com"
+- tapOn:
+    point: "50%,38%"
+- inputText: "recruiter123"
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Navigasi ke halaman Add Job
+# Tap menu atau tombol untuk add new job
+- tapOn: "Add Job"
+- waitForAnimationToEnd
+
+# Isi semua field dengan data valid
+# Job Position
+- tapOn: "Job Position"
+- inputText: "Senior Flutter Developer"
+
+# Location
+- tapOn: "Location"
+- inputText: "Jakarta, Indonesia"
+
+# Job Type
+- tapOn: "Job Type"
+- tapOn: "Full-time"
+
+# Categories
+- tapOn: "Categories"
+- tapOn: "IT"
+- tapOn: "Software Development"
+
+# Job Description (minimal 50 karakter)
+- tapOn: "Job Description"
+- inputText: "We are looking for an experienced Flutter developer to join our dynamic team and work on exciting mobile projects."
+
+# Requirements
+- tapOn: "Requirements"
+- inputText: "3+ years Flutter experience"
+
+# Facilities
+- tapOn: "Facilities"
+- inputText: "Health Insurance, Remote Work"
+
+# Salary
+- tapOn: "Salary"
+- inputText: "IDR 10,000,000 - 15,000,000"
+
+# Company Description (max 150 karakter)
+- tapOn: "About Company"
+- inputText: "Leading tech company focused on mobile innovation"
+
+# Industry
+- tapOn: "Industry"
+- inputText: "Information Technology"
+
+# Website
+- tapOn: "Website"
+- inputText: "www.techcompany.com"
+
+# Pilih tanggal mulai dan akhir
+- tapOn: "Start Date"
+- tapOn: "Select Date"
+# Pilih tanggal besok atau sesuai UI
+- tapOn: "OK"
+
+- tapOn: "End Date"
+- tapOn: "Select Date"
+# Pilih 30 hari dari start date
+- tapOn: "OK"
+
+# Upload company gallery (jika ada)
+- tapOn: "Upload Gallery"
+- waitForAnimationToEnd
+
+# Klik tombol Save Job
+- tapOn: "Save Job"
+
+# Tunggu proses simpan
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Verifikasi snackbar hijau muncul
+# Expected: "Job has been posted successfully!"

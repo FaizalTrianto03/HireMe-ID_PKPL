@@ -1,0 +1,42 @@
+appId: com.example.HireMe_Id
+---
+# Buka app
+- launchApp
+
+- waitForAnimationToEnd
+
+# Tap Profile di bottom nav (90% horizontal = kanan, 95% vertical = bawah)
+- tapOn:
+    point: "90%,95%"
+
+- waitForAnimationToEnd
+
+# Isi kredensial
+- tapOn: "Email"
+- inputText: "testrecruiter@gmail.com"
+
+- tapOn: "Password"
+- inputText: "recruiter123"
+
+# Toggle eye icon buat show/hide password (90% horizontal, 38% vertical)
+- tapOn:
+    point: "90%,38%"
+- waitForAnimationToEnd
+
+# Toggle lagi buat hide
+- tapOn:
+    point: "90%,38%"
+- waitForAnimationToEnd
+
+# Test checkbox remember me (uncheck terus check lagi)
+- tapOn: "Remember Me"
+- waitForAnimationToEnd
+
+- tapOn: "Remember Me"
+- waitForAnimationToEnd
+
+# Login
+- tapOn: "Login"
+
+# Tunggu redirect otomatis ke dashboard
+- waitForAnimationToEnd

@@ -1,0 +1,37 @@
+appId: com.example.HireMe_Id
+---
+# TC-LOGIN-02: Email tanpa format yang benar
+# Requirement: FR-LOGIN-001
+# Expected: Sistem menampilkan pesan "Format email tidak valid"
+
+# Buka aplikasi
+- launchApp
+
+# Tunggu aplikasi siap
+- waitForAnimationToEnd
+
+# Tap tombol Profile untuk ke halaman login
+- tapOn:
+    point: "90%,95%"
+
+# Tunggu halaman login muncul
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Isi email tanpa @ (format tidak valid)
+- tapOn:
+    point: "50%,30%"
+- inputText: "adminhireme"
+
+# Isi password yang valid
+- tapOn:
+    point: "50%,38%"
+- inputText: "AdminHireme123"
+
+# Klik tombol Login
+- tapOn: "Login"
+
+# Tunggu response sistem
+- waitForAnimationToEnd
+
+# Expected Result: Sistem menampilkan pesan error format email tidak valid

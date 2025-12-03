@@ -1,0 +1,86 @@
+appId: com.example.HireMe_Id
+---
+# TC-JOB-06: Job Description 49 karakter ditolak
+# Requirement: FR-JOB-003
+# Expected: Snackbar merah "Job description must be at least 50 characters."
+
+# Buka aplikasi
+- launchApp
+
+# Tunggu aplikasi siap
+- waitForAnimationToEnd
+
+# Login sebagai recruiter
+- tapOn:
+    point: "90%,95%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Isi kredensial recruiter
+- tapOn:
+    point: "50%,30%"
+- inputText: "testrecruiter@gmail.com"
+- tapOn:
+    point: "50%,38%"
+- inputText: "recruiter123"
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Navigasi ke Add Job
+- tapOn: "Add Job"
+- waitForAnimationToEnd
+
+# Isi Job Position
+- tapOn: "Job Position"
+- inputText: "QA Engineer"
+
+# Isi Job Description sepanjang 49 karakter (kurang dari 50)
+- tapOn: "Job Description"
+- inputText: "Testing mobile apps for quality and performance"
+
+# Isi field lain dengan valid
+- tapOn: "Location"
+- inputText: "Jakarta"
+
+- tapOn: "Job Type"
+- tapOn: "Full-time"
+
+- tapOn: "Categories"
+- tapOn: "IT"
+
+- tapOn: "Requirements"
+- inputText: "QA experience"
+
+- tapOn: "Facilities"
+- inputText: "Insurance"
+
+- tapOn: "Salary"
+- inputText: "IDR 7,000,000"
+
+- tapOn: "About Company"
+- inputText: "Software testing company"
+
+- tapOn: "Industry"
+- inputText: "Technology"
+
+- tapOn: "Website"
+- inputText: "www.qacompany.com"
+
+# Pilih tanggal
+- tapOn: "Start Date"
+- tapOn: "Select Date"
+- tapOn: "OK"
+
+- tapOn: "End Date"
+- tapOn: "Select Date"
+- tapOn: "OK"
+
+# Klik Save Job
+- tapOn: "Save Job"
+
+# Tunggu response
+- waitForAnimationToEnd
+
+# Expected Result: Pesan error muncul sesuai harapan

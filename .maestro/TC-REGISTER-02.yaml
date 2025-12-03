@@ -1,0 +1,44 @@
+appId: com.example.HireMe_Id
+---
+# TC-REGISTER-02: Email sudah terdaftar
+# Requirement: FR-REGISTER-001
+# Expected: Sistem menampilkan pesan "Email sudah terdaftar"
+
+# Buka aplikasi
+- launchApp
+
+# Tunggu aplikasi siap
+- waitForAnimationToEnd
+
+# Tap tombol Profile
+- tapOn:
+    point: "90%,95%"
+
+# Tunggu halaman muncul
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Tap tombol Register
+- tapOn: "Register"
+
+# Tunggu halaman register muncul
+- waitForAnimationToEnd
+
+# Isi email yang sudah terdaftar
+- tapOn:
+    point: "50%,25%"
+- inputText: "user@example.com"
+
+# Isi password yang valid
+- tapOn:
+    point: "50%,33%"
+- inputText: "SecurePass123"
+
+# Klik tombol Daftar
+- tapOn: "Daftar"
+
+# Tunggu response sistem
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Expected Result: Pesan error "Email sudah terdaftar" muncul

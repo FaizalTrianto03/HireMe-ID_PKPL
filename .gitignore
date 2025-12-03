@@ -56,3 +56,7 @@ lib/firebase_options.dart
 **/*_secret.json
 **/api_keys.dart
 **/config_keys.dart
+
+# Maestro files
+maestro.zip
+maestro/

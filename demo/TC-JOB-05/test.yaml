@@ -1,0 +1,89 @@
+appId: com.example.HireMe_Id
+---
+# TC-JOB-05: Job Description antara 50-300 karakter diterima
+# Precondition: Login sebagai recruiter
+# Expected: Sistem menerima input dan snackbar hijau sukses
+
+# Buka aplikasi
+- launchApp
+
+# Tunggu aplikasi siap
+- waitForAnimationToEnd
+
+# Login sebagai recruiter
+- tapOn:
+    point: "90%,95%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Isi kredensial recruiter
+- tapOn:
+    point: "50%,30%"
+- inputText: "testrecruiter@gmail.com"
+- tapOn:
+    point: "50%,38%"
+- inputText: "recruiter123"
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Navigasi ke halaman Add Job
+- tapOn: "Add Job"
+- waitForAnimationToEnd
+
+# Isi Job Position
+- tapOn: "Job Position"
+- inputText: "Backend Developer"
+
+# Isi Job Description dengan 100 karakter (dalam range 50-300)
+- tapOn: "Job Description"
+- inputText: "Join our team to develop scalable backend systems using modern technologies and best practices daily"
+
+# Isi field lain dengan valid
+- tapOn: "Location"
+- inputText: "Jakarta"
+
+- tapOn: "Job Type"
+- tapOn: "Full-time"
+
+- tapOn: "Categories"
+- tapOn: "IT"
+
+- tapOn: "Requirements"
+- inputText: "Backend experience"
+
+- tapOn: "Facilities"
+- inputText: "Health Insurance"
+
+- tapOn: "Salary"
+- inputText: "IDR 9,000,000"
+
+- tapOn: "About Company"
+- inputText: "Tech company building cloud solutions"
+
+- tapOn: "Industry"
+- inputText: "Technology"
+
+- tapOn: "Website"
+- inputText: "www.cloudcompany.com"
+
+# Pilih tanggal
+- tapOn: "Start Date"
+- tapOn: "Select Date"
+- tapOn: "OK"
+
+- tapOn: "End Date"
+- tapOn: "Select Date"
+- tapOn: "OK"
+
+# Klik Save Job
+- tapOn: "Save Job"
+
+# Tunggu proses simpan
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Verifikasi snackbar hijau sukses
+# Expected: "Job has been posted successfully!"
+# Description dengan 100 karakter harus diterima

@@ -1,0 +1,41 @@
+appId: com.example.HireMe_Id
+---
+# TC-LOGIN-04: Akun tidak aktif atau role kosong
+# Precondition: Akun non-aktif sudah disiapkan di database
+# Expected: Sistem menolak login dengan pesan error
+
+# Buka aplikasi
+- launchApp
+
+# Tunggu aplikasi siap
+- waitForAnimationToEnd
+
+# Tap tombol Profile untuk ke halaman login
+- tapOn:
+    point: "90%,95%"
+
+# Tunggu halaman login muncul
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Test dengan akun non-aktif
+# Isi email akun yang dinonaktifkan
+- tapOn:
+    point: "50%,30%"
+- inputText: "testcreateaccount@gmail.com"
+
+# Isi password
+- tapOn:
+    point: "50%,38%"
+- inputText: "IniTesting123"
+
+# Klik tombol Login
+- tapOn: "Login"
+
+# Tunggu response sistem
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Sistem harus menolak login
+# Expected: Pesan "Akun dinonaktifkan" atau "Role tidak diatur"
+# atau pesan error lain yang menunjukkan akun tidak bisa login

@@ -1,0 +1,87 @@
+appId: com.example.HireMe_Id
+---
+# TC-JOB-03: Job Position baru berhasil disimpan
+# Precondition: Database belum memiliki job dengan posisi "Mobile Engineer"
+# Expected: Snackbar hijau sukses muncul
+
+# Buka aplikasi
+- launchApp
+
+# Tunggu aplikasi siap
+- waitForAnimationToEnd
+
+# Login sebagai recruiter
+- tapOn:
+    point: "90%,95%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Isi kredensial recruiter
+- tapOn:
+    point: "50%,30%"
+- inputText: "testrecruiter@gmail.com"
+- tapOn:
+    point: "50%,38%"
+- inputText: "recruiter123"
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Navigasi ke halaman Add Job
+- tapOn: "Add Job"
+- waitForAnimationToEnd
+
+# Isi dengan position baru "Mobile Engineer"
+- tapOn: "Job Position"
+- inputText: "Mobile Engineer"
+
+# Isi semua field lain dengan valid
+- tapOn: "Location"
+- inputText: "Jakarta, Indonesia"
+
+- tapOn: "Job Type"
+- tapOn: "Full-time"
+
+- tapOn: "Categories"
+- tapOn: "IT"
+
+- tapOn: "Job Description"
+- inputText: "We are looking for a talented mobile engineer to build amazing applications for our users"
+
+- tapOn: "Requirements"
+- inputText: "Mobile development experience"
+
+- tapOn: "Facilities"
+- inputText: "Health Insurance"
+
+- tapOn: "Salary"
+- inputText: "IDR 8,000,000 - 12,000,000"
+
+- tapOn: "About Company"
+- inputText: "Tech startup building innovative products"
+
+- tapOn: "Industry"
+- inputText: "Technology"
+
+- tapOn: "Website"
+- inputText: "www.company.com"
+
+# Pilih tanggal
+- tapOn: "Start Date"
+- tapOn: "Select Date"
+- tapOn: "OK"
+
+- tapOn: "End Date"
+- tapOn: "Select Date"
+- tapOn: "OK"
+
+# Klik Save Job
+- tapOn: "Save Job"
+
+# Tunggu proses simpan
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Verifikasi snackbar hijau sukses
+# Expected: "Job has been posted successfully!"

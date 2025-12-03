@@ -1,0 +1,87 @@
+appId: com.example.HireMe_Id
+---
+# TC-LOGIN-03: Pemeriksaan status akun dan role user
+# Requirement: FR-LOGIN-002
+# Expected: Tiap akun diarahkan ke halaman sesuai perannya
+
+# Test 1: Login sebagai Admin
+- launchApp
+- waitForAnimationToEnd
+
+# Ke halaman login
+- tapOn:
+    point: "90%,95%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Login dengan akun admin
+- tapOn:
+    point: "50%,30%"
+- inputText: "adminhireme@gmail.com"
+- tapOn:
+    point: "50%,38%"
+- inputText: "AdminHireme123"
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Verifikasi redirect ke dashboard admin
+# Expected: Admin dashboard muncul
+
+# Logout untuk test berikutnya
+- back
+- waitForAnimationToEnd
+
+# Test 2: Login sebagai Recruiter
+- launchApp
+- waitForAnimationToEnd
+
+# Ke halaman login
+- tapOn:
+    point: "90%,95%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Login dengan akun recruiter
+- tapOn:
+    point: "50%,30%"
+- inputText: "testrecruiter@gmail.com"
+- tapOn:
+    point: "50%,38%"
+- inputText: "recruiter123"
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Verifikasi redirect ke dashboard recruiter
+# Expected: Recruiter dashboard muncul
+
+# Logout untuk test berikutnya
+- back
+- waitForAnimationToEnd
+
+# Test 3: Login sebagai Job Seeker
+- launchApp
+- waitForAnimationToEnd
+
+# Ke halaman login
+- tapOn:
+    point: "90%,95%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Login dengan akun jobseeker
+- tapOn:
+    point: "50%,30%"
+- inputText: "testapplicant@gmail.com"
+- tapOn:
+    point: "50%,38%"
+- inputText: "applicant123"
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Expected Result: Redirect sesuai role masing-masing

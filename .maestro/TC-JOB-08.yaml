@@ -1,0 +1,87 @@
+appId: com.example.HireMe_Id
+---
+# TC-JOB-08: Company Description 151 karakter ditolak
+# Requirement: FR-JOB-004
+# Expected: Snackbar merah "Company description must not exceed 150 characters."
+
+# Buka aplikasi
+- launchApp
+
+# Tunggu aplikasi siap
+- waitForAnimationToEnd
+
+# Login sebagai recruiter
+- tapOn:
+    point: "90%,95%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Isi kredensial recruiter
+- tapOn:
+    point: "50%,30%"
+- inputText: "testrecruiter@gmail.com"
+- tapOn:
+    point: "50%,38%"
+- inputText: "recruiter123"
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Navigasi ke Add Job
+- tapOn: "Add Job"
+- waitForAnimationToEnd
+
+# Isi Job Position
+- tapOn: "Job Position"
+- inputText: "Data Scientist"
+
+# Isi Job Description dengan valid
+- tapOn: "Job Description"
+- inputText: "We are seeking a talented data scientist to analyze complex datasets and build machine learning models"
+
+# Isi field lain dengan valid
+- tapOn: "Location"
+- inputText: "Jakarta"
+
+- tapOn: "Job Type"
+- tapOn: "Full-time"
+
+- tapOn: "Categories"
+- tapOn: "IT"
+
+- tapOn: "Requirements"
+- inputText: "Data science, Machine learning, Python"
+
+- tapOn: "Facilities"
+- inputText: "Health Insurance"
+
+- tapOn: "Salary"
+- inputText: "IDR 13,000,000"
+
+# Company Description sepanjang 151 karakter (melebihi batas max)
+- tapOn: "About Company"
+- inputText: "We are a leading technology company specializing in cloud solutions and digital transformation for enterprise clients across Southeast Asia region"
+
+- tapOn: "Industry"
+- inputText: "Technology"
+
+- tapOn: "Website"
+- inputText: "www.datascience.com"
+
+# Pilih tanggal
+- tapOn: "Start Date"
+- tapOn: "Select Date"
+- tapOn: "OK"
+
+- tapOn: "End Date"
+- tapOn: "Select Date"
+- tapOn: "OK"
+
+# Klik Save Job
+- tapOn: "Save Job"
+
+# Tunggu response
+- waitForAnimationToEnd
+
+# Expected Result: Pesan error muncul sesuai harapan

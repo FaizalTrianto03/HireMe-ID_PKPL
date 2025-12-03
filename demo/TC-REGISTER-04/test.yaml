@@ -1,0 +1,50 @@
+appId: com.example.HireMe_Id
+---
+# TC-REGISTER-04: Role tidak valid (dimanipulasi)
+# Precondition: Test lewat backend dengan role tidak dikenal
+# Expected: Sistem menolak dengan pesan "Role tidak valid"
+
+# NOTE: Test case ini biasanya dilakukan di level backend/API
+# atau dengan mengubah nilai role secara programatis
+# Dalam konteks Maestro UI testing, ini sulit dilakukan
+
+# Untuk demo, kita akan login sebagai recruiter terlebih dahulu
+# kemudian mencoba melakukan registrasi dengan role yang invalid
+
+# Buka aplikasi
+- launchApp
+
+# Tunggu aplikasi siap
+- waitForAnimationToEnd
+
+# Login sebagai recruiter untuk akses halaman admin/backend
+- tapOn:
+    point: "90%,95%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Login recruiter
+- tapOn:
+    point: "50%,30%"
+- inputText: "testrecruiter@gmail.com"
+- tapOn:
+    point: "50%,38%"
+- inputText: "recruiter123"
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Setelah login, jika ada fitur untuk menambah user dengan role
+# atau jika bisa manipulasi data, coba set role ke "tester"
+# yang tidak termasuk dalam list role yang valid
+
+# Untuk demo UI, kita asumsikan ada dropdown role
+# yang bisa dimanipulasi atau role field yang bisa diisi manual
+
+# Expected result: 
+# Sistem menolak registrasi dengan role tidak valid
+# Pesan error: "Role tidak valid" atau sejenisnya
+
+# Catatan: Test ini lebih cocok dilakukan di level unit/integration test
+# dimana kita bisa mock atau inject data langsung ke sistem

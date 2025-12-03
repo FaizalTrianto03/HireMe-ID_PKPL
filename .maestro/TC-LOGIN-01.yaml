@@ -1,0 +1,39 @@
+appId: com.example.HireMe_Id
+---
+# TC-LOGIN-01: Login dengan email dan password yang benar
+# Requirement: FR-LOGIN-001
+# Expected: Login berhasil dan diarahkan ke dashboard admin
+
+# Buka aplikasi
+- launchApp
+
+# Tunggu aplikasi siap
+- waitForAnimationToEnd
+
+# Tap tombol Profile di bottom navigation
+- tapOn:
+    point: "90%,95%"
+
+# Tunggu halaman login muncul
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Isi email admin yang valid
+- tapOn:
+    point: "50%,30%"
+- inputText: "adminhireme@gmail.com"
+
+# Isi password admin yang valid
+- tapOn:
+    point: "50%,38%"
+- inputText: "AdminHireme123"
+
+# Klik tombol Login
+- tapOn: "Login"
+
+# Tunggu proses login dan redirect ke dashboard
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Expected Result: Login berhasil dan halaman dashboard muncul

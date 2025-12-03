@@ -10,8 +10,17 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 class JobController extends GetxController {
-  final FirebaseAuth auth = FirebaseAuth.instance;
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  // Dependency injection agar unit test bisa memakai mock tanpa inisialisasi Firebase/platform
+  final FirebaseAuth auth;
+  final FirebaseFirestore firestore;
+  final bool skipInit; // true saat unit test untuk hindari path_provider
+
+  JobController({
+    FirebaseAuth? firebaseAuth,
+    FirebaseFirestore? firebaseFirestore,
+    this.skipInit = false,
+  })  : auth = firebaseAuth ?? FirebaseAuth.instance,
+        firestore = firebaseFirestore ?? FirebaseFirestore.instance;
 
   var jobs = <Map<String, dynamic>>[].obs;
   var recruiterData = {}.obs;
@@ -27,7 +36,9 @@ class JobController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    initTemporaryDirectory();
+    if (!skipInit) {
+      initTemporaryDirectory();
+    }
   }
 
   Future<void> initTemporaryDirectory() async {
@@ -55,66 +66,98 @@ class JobController extends GetxController {
     required List<String> companyGalleryPaths,
     required DateTime? startDate,
     required DateTime? endDate,
+    bool showErrors = true,
+  }) {
+    final errorMessage = _validateJobFields(
+      position: position,
+      location: location,
+      jobType: jobType,
+      categories: categories,
+      jobDescription: jobDescription,
+      requirements: requirements,
+      salary: salary,
+      aboutCompany: aboutCompany,
+      industry: industry,
+      website: website,
+      facilities: facilities,
+      companyGalleryPaths: companyGalleryPaths,
+      startDate: startDate,
+      endDate: endDate,
+    );
+    
+    if (errorMessage != null) {
+      if (showErrors) {
+        _showValidationError(errorMessage);
+      }
+      return false;
+    }
+    
+    return true;
+  }
+  
+  String? _validateJobFields({
+    required String position,
+    required String location,
+    required String jobType,
+    required List<String> categories,
+    required String jobDescription,
+    required List<dynamic> requirements,
+    required String salary,
+    required String aboutCompany,
+    required String industry,
+    required String website,
+    required List<String> facilities,
+    required List<String> companyGalleryPaths,
+    required DateTime? startDate,
+    required DateTime? endDate,
   }) {
     // Validasi 1: Job Position
     if (position.trim().isEmpty) {
-      _showValidationError("Job position is required");
-      return false;
+      return "Job position is required";
     }
     if (position.trim().length < 3) {
-      _showValidationError("Job position must be at least 3 characters");
-      return false;
+      return "Job position must be at least 3 characters";
     }
     
     // Validasi 2: Location
     if (location.trim().isEmpty) {
-      _showValidationError("Location is required");
-      return false;
+      return "Location is required";
     }
     if (location.trim().length < 3) {
-      _showValidationError("Location must be at least 3 characters");
-      return false;
+      return "Location must be at least 3 characters";
     }
     
     // Validasi 3: Job Type
     final allowedJobTypes = ['Full-time', 'Part-time', 'Contract', 'Freelance'];
     if (jobType.isEmpty) {
-      _showValidationError("Job type is required");
-      return false;
+      return "Job type is required";
     }
     if (!allowedJobTypes.contains(jobType)) {
-      _showValidationError("Invalid job type. Must be Full-time, Part-time, Contract, or Freelance");
-      return false;
+      return "Invalid job type. Must be Full-time, Part-time, Contract, or Freelance";
     }
     
     // Validasi 4: Categories
     if (categories.isEmpty) {
-      _showValidationError("At least one job category is required");
-      return false;
+      return "At least one job category is required";
     }
     if (categories.length > 5) {
-      _showValidationError("Maximum 5 job categories allowed");
-      return false;
+      return "Maximum 5 job categories allowed";
     }
     
     // Validasi 5: Job Description
     if (jobDescription.trim().isEmpty) {
-      _showValidationError("Job description is required");
-      return false;
+      return "Job description is required";
     }
     if (jobDescription.trim().length < 50) {
-      _showValidationError("Job description must be at least 50 characters");
-      return false;
+      return "Job description must be at least 50 characters";
     }
     if (jobDescription.trim().length > 300) {
-      _showValidationError("Job description must not exceed 300 characters");
-      return false;
+      return "Job description must not exceed 300 characters";
     }
     
     // Validasi 6: Requirements
     if (requirements.isEmpty) {
-      _showValidationError("At least one job requirement is required");
-      return false;
+      return "At least one job requirement is required";
     }
     for (var i = 0; i < requirements.length; i++) {
       String reqText = '';
@@ -125,105 +168,88 @@ class JobController extends GetxController {
       }
       
       if (reqText.trim().isEmpty) {
-        _showValidationError("Requirement ${i + 1} cannot be empty");
-        return false;
+        return "Requirement ${i + 1} cannot be empty";
       }
       if (reqText.trim().length < 5) {
-        _showValidationError("Requirement ${i + 1} must be at least 5 characters");
-        return false;
+        return "Requirement ${i + 1} must be at least 5 characters";
       }
     }
     
     // Validasi 7: Facilities
     if (facilities.isEmpty || (facilities.length == 1 && facilities[0].trim().isEmpty)) {
-      _showValidationError("At least one benefit/facility is required");
-      return false;
+      return "At least one benefit/facility is required";
     }
     
     // Validasi 8: Salary
     if (salary.trim().isEmpty) {
-      _showValidationError("Salary range is required");
-      return false;
+      return "Salary range is required";
     }
     if (salary.trim().length < 5) {
-      _showValidationError("Please provide a valid salary range (e.g., IDR 5,000,000 - 10,000,000)");
-      return false;
+      return "Please provide a valid salary range (e.g., IDR 5,000,000 - 10,000,000)";
     }
     // Validasi 9: Start & End Date
     if (startDate == null) {
-      _showValidationError("Start date is required");
-      return false;
+      return "Start date is required";
     }
     if (endDate == null) {
-      _showValidationError("End date is required");
-      return false;
+      return "End date is required";
     }
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final sDate = DateTime(startDate.year, startDate.month, startDate.day);
     final eDate = DateTime(endDate.year, endDate.month, endDate.day);
     if (sDate.isBefore(today)) {
-      _showValidationError("Start date cannot be before today");
-      return false;
+      return "Start date cannot be before today";
     }
     if (eDate.isBefore(sDate)) {
-      _showValidationError("End date cannot be before start date");
-      return false;
+      return "End date cannot be before start date";
     }
     const maxDurationDays = 90;
     if (eDate.isAfter(sDate.add(const Duration(days: maxDurationDays)))) {
-      _showValidationError("Job duration cannot exceed 90 days");
-      return false;
+      return "Job duration cannot exceed 90 days";
     }
     
     // Validasi 10: About Company
     if (aboutCompany.trim().isEmpty) {
-      _showValidationError("Company description is required");
-      return false;
+      return "Company description is required";
     }
     if (aboutCompany.trim().length < 30) {
-      _showValidationError("Company description must be at least 30 characters");
-      return false;
+      return "Company description must be at least 30 characters";
     }
     if (aboutCompany.trim().length > 150) {
-      _showValidationError("Company description must not exceed 150 characters");
-      return false;
+      return "Company description must not exceed 150 characters";
     }
     
     // Validasi 11: Industry
     if (industry.trim().isEmpty) {
-      _showValidationError("Industry is required");
-      return false;
+      return "Industry is required";
     }
     
     // Validasi 12: Website
     if (website.trim().isEmpty) {
-      _showValidationError("Company website is required");
-      return false;
+      return "Company website is required";
     }
     final urlPattern = RegExp(
       r'^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}',
       caseSensitive: false,
     );
     if (!urlPattern.hasMatch(website.trim())) {
-      _showValidationError("Invalid website URL format. Must include domain (e.g., www.company.com)");
-      return false;
+      return "Invalid website URL format. Must include domain (e.g., www.company.com)";
     }
     
     // Validasi 13: Company Gallery
     if (companyGalleryPaths.isEmpty) {
-      _showValidationError("At least one company gallery image is required");
-      return false;
+      return "At least one company gallery image is required";
     }
     if (companyGalleryPaths.length > 10) {
-      _showValidationError("Maximum 10 company gallery images allowed");
-      return false;
+      return "Maximum 10 company gallery images allowed";
     }
     
-    return true;
+    return null; // No errors
   }
   
   void _showValidationError(String message) {
+    if (Get.testMode) return;
     Get.snackbar(
       'Validation Failed',
       message,
@@ -237,7 +263,7 @@ class JobController extends GetxController {
   }
   
   // cek duplicate job position (case insensitive)
-  bool validateJobUniqueness(String position, {int? excludeJobIndex}) {
+  bool validateJobUniqueness(String position, {int? excludeJobIndex, bool showErrors = true}) {
     final normalizedPosition = position.trim().toLowerCase();
     
     for (var i = 0; i < jobs.length; i++) {
@@ -247,7 +273,9 @@ class JobController extends GetxController {
       
       final existingPosition = (jobs[i]['position'] ?? '').toString().toLowerCase();
       if (existingPosition == normalizedPosition) {
-        _showValidationError('A job with the position "$position" already exists. Please use a different position title.');
+        if (showErrors) {
+          _showValidationError('A job with the position "$position" already exists. Please use a different position title.');
+        }
         return false;
       }
     }
@@ -256,20 +284,26 @@ class JobController extends GetxController {
   }
   
   // validasi index dan struktur data job sebelum update/delete
-  bool validateJobDataIntegrity(int jobIndex) {
+  bool validateJobDataIntegrity(int jobIndex, {bool showErrors = true}) {
     if (jobIndex < 0) {
-      _showValidationError('Job index cannot be negative');
+      if (showErrors) {
+        _showValidationError('Job index cannot be negative');
+      }
       return false;
     }
     
     if (jobIndex >= jobs.length) {
-      _showValidationError('The selected job no longer exists. Please refresh the job list.');
+      if (showErrors) {
+        _showValidationError('The selected job no longer exists. Please refresh the job list.');
+      }
       return false;
     }
     
     final job = jobs[jobIndex];
     if (job['idjob'] == null || job['idjob'].toString().isEmpty) {
-      _showValidationError('Job data is corrupted (missing ID). Please contact support.');
+      if (showErrors) {
+        _showValidationError('Job data is corrupted (missing ID). Please contact support.');
+      }
       return false;
     }
     

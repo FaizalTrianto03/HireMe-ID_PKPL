@@ -1,0 +1,50 @@
+appId: com.example.HireMe_Id
+---
+# TC-LOGIN-01: Login dengan email dan password yang benar
+# Precondition: Akun admin sudah aktif di sistem
+# Expected: Login berhasil dan diarahkan ke dashboard admin
+
+# Buka aplikasi
+- launchApp
+
+# Tunggu aplikasi siap
+- waitForAnimationToEnd
+
+# Tap tombol Profile di bottom navigation
+- tapOn:
+    point: "90%,95%"
+
+# Tunggu halaman login muncul
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Isi email admin yang valid
+- tapOn:
+    point: "50%,30%"
+- inputText: "adminhireme@gmail.com"
+
+# Isi password admin yang valid
+- tapOn:
+    point: "50%,38%"
+- inputText: "AdminHireme123"
+
+# Toggle eye icon untuk melihat password
+- tapOn:
+    point: "90%,38%"
+- waitForAnimationToEnd
+
+# Toggle lagi untuk hide password
+- tapOn:
+    point: "90%,38%"
+- waitForAnimationToEnd
+
+# Klik tombol Login
+- tapOn: "Login"
+
+# Tunggu proses login dan redirect ke dashboard
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Verifikasi berhasil masuk ke dashboard
+# Sistem akan menampilkan dashboard sesuai role admin

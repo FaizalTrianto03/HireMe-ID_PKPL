@@ -1,0 +1,49 @@
+appId: com.example.HireMe_Id
+---
+# TC-REGISTER-01: Pendaftaran dengan email baru dan password kuat
+# Requirement: FR-REGISTER-001
+# Expected: Akun berhasil dibuat dan login otomatis
+
+# Buka aplikasi
+- launchApp
+
+# Tunggu aplikasi siap
+- waitForAnimationToEnd
+
+# Tap tombol Profile
+- tapOn:
+    point: "90%,95%"
+
+# Tunggu halaman muncul
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Tap tombol Register
+- tapOn: "Register"
+
+# Tunggu halaman register muncul
+- waitForAnimationToEnd
+
+# Isi email baru
+- tapOn:
+    point: "50%,25%"
+- inputText: "newuser@test.com"
+
+# Isi password yang kuat
+- tapOn:
+    point: "50%,33%"
+- inputText: "SecurePass123"
+
+# Pilih role Job Seeker
+- tapOn: "Job Seeker"
+- waitForAnimationToEnd
+
+# Klik tombol Daftar
+- tapOn: "Daftar"
+
+# Tunggu proses registrasi
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Expected Result: Akun berhasil dibuat dan login otomatis

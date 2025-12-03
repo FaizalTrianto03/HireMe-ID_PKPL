@@ -1,0 +1,90 @@
+appId: com.example.HireMe_Id
+---
+# TC-JOB-07: Company Description 150 karakter diterima
+# Precondition: Login sebagai recruiter
+# Expected: Sistem menerima input dan snackbar hijau sukses
+
+# Buka aplikasi
+- launchApp
+
+# Tunggu aplikasi siap
+- waitForAnimationToEnd
+
+# Login sebagai recruiter
+- tapOn:
+    point: "90%,95%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Isi kredensial recruiter
+- tapOn:
+    point: "50%,30%"
+- inputText: "testrecruiter@gmail.com"
+- tapOn:
+    point: "50%,38%"
+- inputText: "recruiter123"
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Navigasi ke halaman Add Job
+- tapOn: "Add Job"
+- waitForAnimationToEnd
+
+# Isi Job Position
+- tapOn: "Job Position"
+- inputText: "DevOps Engineer"
+
+# Isi Job Description dengan valid
+- tapOn: "Job Description"
+- inputText: "Looking for experienced DevOps engineer to manage our cloud infrastructure and deployment pipelines"
+
+# Isi field lain dengan valid
+- tapOn: "Location"
+- inputText: "Jakarta"
+
+- tapOn: "Job Type"
+- tapOn: "Full-time"
+
+- tapOn: "Categories"
+- tapOn: "IT"
+
+- tapOn: "Requirements"
+- inputText: "DevOps experience, Docker, Kubernetes"
+
+- tapOn: "Facilities"
+- inputText: "Health Insurance, Training"
+
+- tapOn: "Salary"
+- inputText: "IDR 11,000,000"
+
+# Company Description dengan 150 karakter (tepat di batas max)
+- tapOn: "About Company"
+- inputText: "We are a leading technology company specializing in cloud solutions and digital transformation for enterprise clients across Southeast Asia"
+
+- tapOn: "Industry"
+- inputText: "Technology"
+
+- tapOn: "Website"
+- inputText: "www.devopscompany.com"
+
+# Pilih tanggal
+- tapOn: "Start Date"
+- tapOn: "Select Date"
+- tapOn: "OK"
+
+- tapOn: "End Date"
+- tapOn: "Select Date"
+- tapOn: "OK"
+
+# Klik Save Job
+- tapOn: "Save Job"
+
+# Tunggu proses simpan
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Verifikasi snackbar hijau sukses
+# Expected: "Job has been posted successfully!"
+# Company description dengan 150 karakter harus diterima

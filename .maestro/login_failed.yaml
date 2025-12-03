@@ -1,0 +1,30 @@
+appId: com.example.HireMe_Id
+---
+# Buka app
+- launchApp
+
+- waitForAnimationToEnd
+
+# Tap Profile di bottom nav
+- tapOn:
+    point: "90%,95%"
+
+# Tunggu halaman login kebuka
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+
+# Isi kredensial yang salah
+- tapOn:
+    point: "50%,30%"
+- inputText: "salah@gmail.com"
+
+- tapOn:
+    point: "50%,38%"
+- inputText: "passwordsalah123"
+
+# Login
+- tapOn: "Login"
+
+# Tunggu error message muncul
+- waitForAnimationToEnd

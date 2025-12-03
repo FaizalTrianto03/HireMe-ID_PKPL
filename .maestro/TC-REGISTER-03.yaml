@@ -1,0 +1,46 @@
+appId: com.example.HireMe_Id
+---
+# TC-REGISTER-03: Tidak memilih role
+# Requirement: FR-REGISTER-002
+# Expected: Sistem menampilkan pesan "Silakan pilih jenis akun"
+
+# Buka aplikasi
+- launchApp
+
+# Tunggu aplikasi siap
+- waitForAnimationToEnd
+
+# Tap tombol Profile
+- tapOn:
+    point: "90%,95%"
+
+# Tunggu halaman muncul
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Tap tombol Register
+- tapOn: "Register"
+
+# Tunggu halaman register muncul
+- waitForAnimationToEnd
+
+# Isi email valid
+- tapOn:
+    point: "50%,25%"
+- inputText: "user@example.com"
+
+# Isi password valid
+- tapOn:
+    point: "50%,33%"
+- inputText: "TestingAkun123"
+
+# TIDAK memilih role
+# Langsung klik Daftar tanpa pilih role
+
+# Klik tombol Daftar
+- tapOn: "Daftar"
+
+# Tunggu response sistem
+- waitForAnimationToEnd
+
+# Expected Result: Pesan error "Silakan pilih jenis akun" muncul dan akun tidak dibuat

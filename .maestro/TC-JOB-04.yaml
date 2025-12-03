@@ -1,0 +1,85 @@
+appId: com.example.HireMe_Id
+---
+# TC-JOB-04: Duplikasi Job Position ditolak
+# Requirement: FR-JOB-002
+# Expected: Snackbar merah "Job position already exists."
+
+# Buka aplikasi
+- launchApp
+
+# Tunggu aplikasi siap
+- waitForAnimationToEnd
+
+# Login sebagai recruiter
+- tapOn:
+    point: "90%,95%"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Isi kredensial recruiter
+- tapOn:
+    point: "50%,30%"
+- inputText: "testrecruiter@gmail.com"
+- tapOn:
+    point: "50%,38%"
+- inputText: "recruiter123"
+- tapOn: "Login"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Navigasi ke halaman Add Job
+- tapOn: "Add Job"
+- waitForAnimationToEnd
+
+# Isi position yang SUDAH ADA "Mobile Engineer"
+- tapOn: "Job Position"
+- inputText: "Mobile Engineer"
+
+# Isi field lain dengan valid
+- tapOn: "Location"
+- inputText: "Bandung"
+
+- tapOn: "Job Type"
+- tapOn: "Full-time"
+
+- tapOn: "Categories"
+- tapOn: "IT"
+
+- tapOn: "Job Description"
+- inputText: "Another position for mobile engineer with different requirements"
+
+- tapOn: "Requirements"
+- inputText: "5+ years experience"
+
+- tapOn: "Facilities"
+- inputText: "Insurance"
+
+- tapOn: "Salary"
+- inputText: "IDR 12,000,000"
+
+- tapOn: "About Company"
+- inputText: "Different company"
+
+- tapOn: "Industry"
+- inputText: "Technology"
+
+- tapOn: "Website"
+- inputText: "www.anothercompany.com"
+
+# Pilih tanggal
+- tapOn: "Start Date"
+- tapOn: "Select Date"
+- tapOn: "OK"
+
+- tapOn: "End Date"
+- tapOn: "Select Date"
+- tapOn: "OK"
+
+# Klik Save Job
+- tapOn: "Save Job"
+
+# Tunggu response
+- waitForAnimationToEnd
+
+# Expected Result: Pesan error muncul sesuai harapan
